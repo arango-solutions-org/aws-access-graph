@@ -41,16 +41,13 @@ def main(argv: list[str] | None = None) -> int:
             from .db import connect
             db = db or connect(create=step in ("schema", "reset"))
             if step == "reset":
-                from .db import GRAPH, ONTOLOGY_GRAPH
-                for name in (GRAPH, ONTOLOGY_GRAPH):
-                    if db.has_graph(name):
-                        db.delete_graph(name, drop_collections=True)
-                print("dropped both graphs and their collections")
+                from .db import reset
+                print(f"dropped {len(reset(db))} collections")
             elif step == "schema":
                 from .schema import create, load_ontology
                 print(create(db))
                 load_ontology(db)
-                print("loaded the ontology into the AWSOntology graph")
+                print("loaded the ontology into the AWSAccessGraph graph")
             elif step == "load":
                 from .load import load
                 print(load(db))

@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from awsgraph import queries as q
-from awsgraph.db import GRAPH, ONTOLOGY_GRAPH, connect
+from awsgraph.db import connect, reset
 from awsgraph.derive import derive
 from awsgraph.generate import write
 from awsgraph.load import load
@@ -26,9 +26,7 @@ EXPECTED = Path(__file__).resolve().parents[1] / "expected"
 @pytest.fixture(scope="module")
 def db():
     database = connect(create=True)
-    for name in (GRAPH, ONTOLOGY_GRAPH):
-        if database.has_graph(name):
-            database.delete_graph(name, drop_collections=True)
+    reset(database)
     path, graph = write()
     create(database)
     load_ontology(database)

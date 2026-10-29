@@ -10,8 +10,9 @@ Turns the ontology profile into an ArangoDB schema:
 * indexes on the attributes the queries filter on.
 
 The collection and attribute names are the ontology's own, so a query reads like the
-ontology. This module also loads the ontology itself (the T-Box) into the same database as a
-separate named graph, using ArangoRDF.
+ontology. This module also loads the ontology itself (the T-Box) into the same graph with
+ArangoRDF, so every instance is linked to its class by a ``type`` edge and the class
+hierarchy can be queried next to the data.
 
     python -m awsgraph schema
 """
@@ -22,7 +23,7 @@ from dataclasses import dataclass
 
 from arango.database import StandardDatabase
 
-from .db import GRAPH, ONTOLOGY_GRAPH
+from .db import GRAPH
 from .ontology import Ontology
 
 
@@ -102,4 +103,4 @@ def load_ontology(db: StandardDatabase, ont: Ontology | None = None) -> None:
     ont = ont or Ontology()
     tbox = Graph()
     tbox += ont.graph   # ArangoRDF modifies the graph it is given
-    ArangoRDF(db).rdf_to_arangodb_by_pgt(ONTOLOGY_GRAPH, tbox, overwrite_graph=True)
+    ArangoRDF(db).rdf_to_arangodb_by_pgt(GRAPH, tbox, overwrite_graph=False)

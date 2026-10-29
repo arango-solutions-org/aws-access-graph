@@ -37,7 +37,7 @@ test:               ## unit tests (no database)
 e2e:                ## end-to-end test against the database in .env
 	$(PY) -m pytest -m e2e
 
-reset:              ## drop both graphs and their collections
+reset:              ## drop the graph and every collection in the project database
 	$(PY) -m awsgraph reset
 
 catalog:            ## rebuild data/action_access_levels.csv
