@@ -1,0 +1,15 @@
+// Q9  What does the ontology say an IAM role can have? (the ontology as a queryable schema)
+// bind: { "fromClass": "IAMRole", "generic": ["IdentityResource", "AWSResource", "Entity"] }
+// Walks up the class hierarchy (subClassOf) and collects every property whose domain is one of
+// those classes. Generic AWSResource properties are left out. Same question as
+// examples/sparql/01_relationships_between_classes.rq, asked of the ontology loaded in ArangoDB.
+WITH Class, Property, ObjectProperty
+LET start = FIRST(FOR c IN Class FILTER c._label == @fromClass RETURN c)
+FOR d IN 0..10 OUTBOUND start subClassOf
+  OPTIONS { uniqueVertices: "global", order: "bfs" }
+  FILTER d._rdftype == "URIRef" AND d._label NOT IN @generic
+  FOR p IN 1..1 INBOUND d domain
+    LET r = FIRST(FOR x IN 1..1 OUTBOUND p range RETURN x._label)
+    LET parent = FIRST(FOR x IN 1..1 OUTBOUND p subPropertyOf RETURN x._label)
+    SORT p._label
+    RETURN { property: p._label, domain: d._label, range: r, parent }

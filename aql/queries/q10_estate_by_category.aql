@@ -1,0 +1,19 @@
+// Q10  How much of each kind of resource is in the estate? (instances rolled up the class hierarchy)
+// bind: { "categories": ["ComputeResource", "StorageResource", "DatabaseResource", "SecurityResource", "IdentityResource"] }
+// Every instance has a type edge to its class; the class hierarchy (subClassOf) rolls classes up
+// into the ontology's top-level categories. Add a class to the ontology and it is counted here
+// with no change to the query.
+WITH Class
+FOR cat IN Class
+  FILTER cat._label IN @categories
+  LET byClass = (
+    FOR c IN 0..10 INBOUND cat subClassOf
+      OPTIONS { uniqueVertices: "global", order: "bfs" }
+      LET n = LENGTH(FOR i IN 1..1 INBOUND c type
+                       FILTER NOT IS_SAME_COLLECTION("Class", i) AND NOT IS_SAME_COLLECTION("Property", i)
+                       RETURN 1)
+      FILTER n > 0
+      SORT n DESC, c._label
+      RETURN { class: c._label, instances: n })
+  SORT SUM(byClass[*].instances) DESC, cat._label
+  RETURN { category: cat._label, instances: SUM(byClass[*].instances), byClass }

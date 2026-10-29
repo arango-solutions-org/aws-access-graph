@@ -1,5 +1,7 @@
 // Q3  What can this user or role reach, including every role it can assume? (blast radius)
-// bind: { "principalArn": "arn:aws:iam::111122223333:user/dev-user", "maxDepth": 6 }
+// bind: { "principalArn": "arn:aws:iam::111122223333:user/dev-user", "maxDepth": 6,
+//         "classifications": ["confidential", "restricted"] }
+// Set classifications to null to list everything the principal can reach, including roles and keys.
 WITH IAMRole, IAMUser, S3Bucket, DynamoDBTable, RDSInstance, SecretsManagerSecret, KMSKey
 LET start = FIRST(UNION(
     (FOR u IN IAMUser FILTER u.arn == @principalArn RETURN u),
@@ -8,6 +10,7 @@ FOR v, e, p IN 1..@maxDepth OUTBOUND start canAssumeRole, canRead, canWrite, can
   PRUNE e != null AND NOT IS_SAME_COLLECTION("canAssumeRole", e)          // a grant ends the route
   OPTIONS { uniqueVertices: "path", order: "bfs" }
   FILTER NOT IS_SAME_COLLECTION("canAssumeRole", e)
+  FILTER @classifications == null OR v.dataClassification IN @classifications
   COLLECT type = PARSE_COLLECTION(v), resource = v.label, classification = v.dataClassification
     INTO routes = { access: PARSE_COLLECTION(e), hops: LENGTH(p.edges), via: p.vertices[-2].label }
   SORT classification IN ["confidential", "restricted"] DESC, type, resource

@@ -1,17 +1,20 @@
 // Q2  Which internet-facing workloads can reach sensitive data, through any chain of roles?
-// bind: { "maxDepth": 6, "sensitive": ["confidential", "restricted"] }
+// bind: { "maxDepth": 6, "sensitive": ["confidential", "restricted"], "throughAdminRoles": false }
 // A derived access edge (canRead, canWrite, canManagePermissions) ends a route: permission
-// on a role is not the same as acting as it.
+// on a role is not the same as acting as it. Routes through an administrator role reach
+// everything and are Q1's job, so they're left out unless throughAdminRoles is true.
 WITH IAMInstanceProfile, IAMRole, S3Bucket, DynamoDBTable, RDSInstance, SecretsManagerSecret, KMSKey
 FOR w IN UNION(
     (FOR x IN EC2Instance    FILTER x.isPubliclyAccessible == true RETURN x),
     (FOR x IN LambdaFunction FILTER x.isPubliclyAccessible == true RETURN x))
   FOR v, e, p IN 1..@maxDepth OUTBOUND w
       hasInstanceProfile, hasRole, hasExecutionRole, canAssumeRole, canRead, canWrite, canManagePermissions
-    PRUNE e != null AND PARSE_COLLECTION(e) IN ["canRead", "canWrite", "canManagePermissions"]
+    PRUNE e != null AND (PARSE_COLLECTION(e) IN ["canRead", "canWrite", "canManagePermissions"]
+                         OR (v.isAdministrator == true AND NOT @throughAdminRoles))
     OPTIONS { uniqueVertices: "path", order: "bfs" }
     FILTER PARSE_COLLECTION(e) IN ["canRead", "canWrite", "canManagePermissions"]
     FILTER v.dataClassification IN @sensitive
+    FILTER @throughAdminRoles OR p.vertices[* FILTER CURRENT.isAdministrator == true] == []
     COLLECT workload = w.label, store = v.label, storeType = PARSE_COLLECTION(v)
       INTO routes = { hops: LENGTH(p.edges), access: PARSE_COLLECTION(e),
                       route: CONCAT_SEPARATOR(" -> ", p.vertices[*].label) }

@@ -57,6 +57,15 @@ def _team_stores(e: Estate, rng: random.Random, acct: Account, team: str, size: 
         name = f"{team}-{env}-table-{i}"
         e.table(name, acct, rng.choice(["internal", "confidential"]), team=team, key=key)
         stores["tables"].append(e.arn(name))
+    name = f"{team}-{env}-credentials"
+    e.secret(name, acct, team=team, key=key)
+    acct_id = e.arn(name).split(":")[4]
+    stores["secrets"] = [f"arn:aws:secretsmanager:us-east-1:{acct_id}:secret:{team}-{env}-*"]  # AWS adds a suffix
+    stores["databases"] = []
+    if team == "data-team":
+        name = f"data-team-{env}-warehouse"
+        e.database(name, acct, "confidential", team=team, key=key)
+        stores["databases"].append(e.arn(name))
     stores["key"] = [e.arn(f"{team}-{env}-key")]
     return stores
 
@@ -74,6 +83,9 @@ def _policies(e: Estate, acct: Account, team: str, stores: dict[str, list[str]])
         Statement(["s3:PutObject", "s3:GetObject"], objs),
         Statement(["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:GetItem"], stores["tables"]),
         Statement(["kms:Decrypt", "kms:GenerateDataKey"], stores["key"]),
+        Statement(["secretsmanager:GetSecretValue"], stores["secrets"]),
+        *([Statement(["rds:CreateDBSnapshot", "rds:DescribeDBInstances"], stores["databases"])]
+          if stores["databases"] else []),
     ], acct, team=team)
     low = stores["internal"] + stores["public"]
     workload = e.managed_policy(f"{team}-{env}-workload", [

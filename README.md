@@ -14,7 +14,7 @@ Each step is a small, readable module and a `make` target, so you can follow it 
 | 3. Schema | One collection per class, one edge collection per relationship, a named graph built from domain and range, and indexes. The ontology itself is loaded alongside | `schema.py` | `make schema` |
 | 4. Load | Load the data with [ArangoRDF](https://github.com/ArangoDB-Community/ArangoRDF) | `load.py` | `make load` |
 | 5. Derive | Evaluate IAM policies in AQL and write `canRead`, `canWrite`, `canManagePermissions` and `isAdministrator` | `aql/derive_*.aql` | `make derive` |
-| 6. Query | Eight security questions in AQL, plus SPARQL and Cypher examples | `aql/queries/`, `examples/` | `make queries` |
+| 6. Query | Eight security questions and two ontology questions in AQL, plus SPARQL and Cypher examples | `aql/queries/`, `examples/` | `make queries` |
 
 ## Quick start
 
@@ -43,6 +43,8 @@ against the database in `.env` and checks every query result.
 | Q6 | Which users can escalate to administrator? |
 | Q7 | Which development identities can reach production roles, and through which trust link? |
 | Q8 | Which sensitive buckets have no accountable team, or can be changed by another team? |
+| Q9 | What does the ontology say an IAM role can have? (the ontology, queried in ArangoDB) |
+| Q10 | How much of each kind of resource is in the estate? (instances rolled up the class hierarchy) |
 
 ## What's in the data
 
