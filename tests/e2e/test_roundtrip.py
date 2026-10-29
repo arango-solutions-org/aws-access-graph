@@ -57,6 +57,7 @@ def test_query_results(db, query):
     rows = q.run(db, query)
     path = EXPECTED / f"{query.id}.json"
     if os.environ.get("UPDATE_EXPECTED"):
+        EXPECTED.mkdir(exist_ok=True)
         path.write_text(json.dumps(rows, indent=2) + "\n")
     if not path.exists():
         pytest.fail(f"no expected results for {query.id}: run with UPDATE_EXPECTED=1 and review the diff")
