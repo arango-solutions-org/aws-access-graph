@@ -1,0 +1,26 @@
+// derive_administrators.aql
+//
+// Sets isAdministrator on every user and role: true when a policy that applies to it
+// (attached directly or, for a user, through a group) allows "*" on "*", nothing denies
+// "*" on "*", and any permission boundary also allows "*" on "*".
+// Run once per collection: bind { "@entities": "IAMUser" } and then { "@entities": "IAMRole" }.
+
+FOR who IN @@entities
+  LET policies = UNION(
+    (FOR p IN 1..1 OUTBOUND who hasPolicyAttachment RETURN p),
+    (FOR g IN 1..1 OUTBOUND who memberOf FOR p IN 1..1 OUTBOUND g hasPolicyAttachment RETURN p))
+  LET boundaries = (FOR b IN 1..1 OUTBOUND who hasPermissionBoundary RETURN b)
+  LET starStatements = (
+    FOR p IN UNION(policies, boundaries)
+      FOR s IN 1..1 OUTBOUND p hasStatement
+        FILTER "*" IN (FOR x IN 1..1 OUTBOUND s hasAction RETURN x.label)
+        FILTER "*" IN (FOR r IN 1..1 OUTBOUND s hasStatementResource RETURN r.label)
+        RETURN { fromBoundary: POSITION(boundaries[*]._id, p._id),
+                 effect: FIRST(FOR e IN 1..1 OUTBOUND s hasEffect RETURN e.label) })
+  LET admin = LENGTH(starStatements[* FILTER !CURRENT.fromBoundary AND CURRENT.effect == "Allow"]) > 0
+          AND LENGTH(starStatements[* FILTER CURRENT.effect == "Deny"]) == 0
+          AND (LENGTH(boundaries) == 0
+               OR LENGTH(starStatements[* FILTER CURRENT.fromBoundary AND CURRENT.effect == "Allow"]) > 0)
+  UPDATE who WITH { isAdministrator: admin } IN @@entities
+  COLLECT AGGREGATE administrators = SUM(admin ? 1 : 0), total = COUNT(1)
+  RETURN { administrators, total }

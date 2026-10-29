@@ -1,0 +1,22 @@
+// Q8  Which sensitive buckets have no accountable team, or can be changed by another team?
+// bind: { "sensitive": ["confidential", "restricted"],
+//         "activeTeams": ["app-team", "web-team", "platform-team", "security-team", "integration-team", "data-team"] }
+// Ownership is a team tag. Tags are shared Tag vertices, so "everything team X owns" is one hop.
+WITH Tag, IAMRole, IAMUser, InlinePolicy, CustomerManagedPolicy, AWSManagedPolicy
+FOR b IN S3Bucket
+  FILTER b.dataClassification IN @sensitive
+  LET team = FIRST(FOR t IN 1..1 OUTBOUND b hasTag FILTER t.tagKey == "team" RETURN t.tagValue)
+  LET ownerStatus = team == null ? "NO_OWNER" : (team IN @activeTeams ? "ACTIVE" : "INACTIVE_TEAM")
+  LET outsideWriters = (
+    FOR holder IN 1..1 INBOUND b canWrite, canManagePermissions
+      FILTER holder.isAdministrator != true                              // administrators are covered by Q6
+      LET holderTeam = FIRST(FOR t IN 1..1 OUTBOUND holder hasTag FILTER t.tagKey == "team" RETURN t.tagValue)
+      FILTER team == null OR holderTeam != team
+      LET inline = LENGTH(FOR pol IN 1..1 OUTBOUND holder hasPolicyAttachment
+                            FILTER IS_SAME_COLLECTION("InlinePolicy", pol) RETURN 1) > 0
+      SORT holder.label
+      RETURN DISTINCT CONCAT(holder.label, " (", holderTeam || "no team", inline ? ", has an inline policy" : "", ")")
+  )
+  FILTER ownerStatus != "ACTIVE" OR LENGTH(outsideWriters) > 0
+  SORT ownerStatus, b.label
+  RETURN { bucket: b.label, ownerTeam: team, ownerStatus, outsideWriters }

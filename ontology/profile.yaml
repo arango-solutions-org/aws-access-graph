@@ -1,0 +1,71 @@
+# The part of the AWS ontology this blueprint uses.
+#
+# Every class and property below must exist in ontology/vendor/aws.ttl. The data generator
+# refuses to write any triple whose subject or object doesn't fit the property's
+# rdfs:domain / rdfs:range, so the data can only ever use the ontology the way it was defined.
+
+ontology: ontology/vendor/aws.ttl
+shapes: ontology/vendor/aws.shapes.ttl
+namespace: "https://w3id.org/arango-solutions/aws-ontology#"
+data_namespace: "https://example.org/aws-access-graph/"
+
+classes:
+  organisation: [AWSAccount, OrganizationalUnit]
+  identity: [IAMUser, IAMGroup, IAMRole, IAMInstanceProfile]
+  policy: [AWSManagedPolicy, CustomerManagedPolicy, InlinePolicy, IAMTrustPolicy,
+           IAMPermissionBoundary, PolicyStatement, Action, Resource, Effect]
+  compute: [EC2Instance, LambdaFunction]
+  data: [S3Bucket, DynamoDBTable, RDSInstance, SecretsManagerSecret]
+  security: [KMSKey]
+  metadata: [Tag]
+
+# Relationships the generator writes (asserted facts).
+asserted_properties:
+  - belongsToOrganizationalUnit   # AWSAccount -> OrganizationalUnit
+  - memberOf                      # IAMUser -> IAMGroup
+  - hasPolicyAttachment           # IAMIdentity -> IAMPolicy
+  - hasPermissionBoundary         # IAMEntity -> IAMPermissionBoundary
+  - canAssumeRole                 # IAMEntity -> IAMRole
+  - hasTrustRelationship          # IAMRole -> IAMTrustPolicy
+  - hasInstanceProfile            # EC2Instance -> IAMInstanceProfile
+  - hasRole                       # IAMInstanceProfile -> IAMRole
+  - hasExecutionRole              # ComputeResource -> IAMRole
+  - hasStatement                  # IAMPolicy -> PolicyStatement
+  - hasEffect                     # PolicyStatement -> Effect
+  - hasAction                     # PolicyStatement -> Action
+  - hasStatementResource          # PolicyStatement -> Resource
+  - encryptedWith                 # AWSResource -> KMSKey
+  - hasTag                        # AWSResource -> Tag
+
+# Attributes the generator writes.
+datatype_properties:
+  - arn
+  - environment
+  - dataClassification
+  - encrypted
+  - isPubliclyAccessible
+  - accessLevel
+  - tagKey
+  - tagValue
+  - policyDocument
+  - instanceProfileName
+  - instanceType
+  - maxSessionDuration
+  - tableName
+  - secretName
+  - engine
+
+# Written by the derivation step (aql/derive_effective_access.aql), never by the generator.
+derived_properties:
+  - canRead
+  - canWrite
+  - canManagePermissions
+  - isAdministrator
+
+# Tag keys the blueprint relies on.
+tags:
+  owner: team             # the owning team
+  breakglass: breakglass  # "approved" on sanctioned emergency-access identities
+
+# Data classifications that count as sensitive.
+sensitive_classifications: [confidential, restricted]

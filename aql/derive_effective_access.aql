@@ -1,0 +1,115 @@
+// derive_effective_access.aql
+//
+// Works out which users and roles can read, write or manage the permissions of each data
+// store, KMS key and role, by evaluating their IAM policies, and writes the result as
+// canRead, canWrite and canManagePermissions edges. Each edge records the actions and
+// policies that produced it.
+//
+// The rules are in docs/04-derive.md. In short: identity policies (own and group), wildcard
+// matching on actions and resources, explicit Deny wins, a permission boundary must also
+// allow, same account only, and AWS's access level decides the edge. Resource policies,
+// conditions and SCPs aren't evaluated.
+//
+// Run after clearing the three edge collections (python -m awsgraph derive does both).
+// No bind parameters.
+
+// Every action with an access level that produces an edge, from the Service Authorization Reference.
+LET actions = (
+  FOR a IN Action
+    FILTER a.accessLevel IN ["Read", "Write", "Permissions management"]
+    RETURN { name: a.label, service: FIRST(SPLIT(a.label, ":")), level: a.accessLevel }
+)
+
+// Everything a grant can point at, with the service and environment it belongs to.
+LET targets = (
+  FOR t IN UNION(
+      (FOR x IN S3Bucket RETURN x), (FOR x IN DynamoDBTable RETURN x), (FOR x IN RDSInstance RETURN x),
+      (FOR x IN SecretsManagerSecret RETURN x), (FOR x IN KMSKey RETURN x), (FOR x IN IAMRole RETURN x))
+    RETURN { id: t._id, arn: t.arn, env: t.environment, service: SPLIT(t.arn, ":")[2] }
+)
+
+LET derived = (
+  FOR who IN UNION((FOR u IN IAMUser RETURN u), (FOR r IN IAMRole RETURN r))
+
+    // The policies that apply: attached to the identity, or (for a user) to its groups.
+    LET attached = UNION(
+      (FOR p IN 1..1 OUTBOUND who hasPolicyAttachment RETURN { policy: p, via: null }),
+      (FOR g IN 1..1 OUTBOUND who memberOf
+         FOR p IN 1..1 OUTBOUND g hasPolicyAttachment RETURN { policy: p, via: g.label }))
+
+    // Statements, with action and resource patterns turned into LIKE patterns (* -> %, ? -> _).
+    LET statements = (
+      FOR a IN attached
+        FOR s IN 1..1 OUTBOUND a.policy hasStatement
+          LET resources = (FOR r IN 1..1 OUTBOUND s hasStatementResource RETURN r.label)
+          RETURN {
+            effect: FIRST(FOR e IN 1..1 OUTBOUND s hasEffect RETURN e.label),
+            actions: (FOR x IN 1..1 OUTBOUND s hasAction
+                        RETURN SUBSTITUTE(SUBSTITUTE(x.label, "*", "%"), "?", "_")),
+            resources: (FOR r IN resources
+                          // an S3 object pattern (bucket/*) counts as the bucket
+                          LET r2 = STARTS_WITH(r, "arn:aws:s3:::") ? FIRST(SPLIT(r, "/")) : r
+                          RETURN SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(r2, "_", "\\_"), "*", "%"), "?", "_")),
+            policy: a.policy.label, via: a.via
+          })
+
+    LET boundaries = (FOR b IN 1..1 OUTBOUND who hasPermissionBoundary RETURN b)
+    LET boundary = (
+      FOR b IN boundaries
+        FOR s IN 1..1 OUTBOUND b hasStatement
+          RETURN {
+            effect: FIRST(FOR e IN 1..1 OUTBOUND s hasEffect RETURN e.label),
+            actions: (FOR x IN 1..1 OUTBOUND s hasAction RETURN SUBSTITUTE(SUBSTITUTE(x.label, "*", "%"), "?", "_")),
+            resources: (FOR r IN 1..1 OUTBOUND s hasStatementResource
+                          LET r2 = STARTS_WITH(r.label, "arn:aws:s3:::") ? FIRST(SPLIT(r.label, "/")) : r.label
+                          RETURN SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(r2, "_", "\\_"), "*", "%"), "?", "_"))
+          })
+    LET denies = UNION(
+      (FOR s IN statements FILTER s.effect == "Deny" RETURN s),
+      (FOR s IN boundary FILTER s.effect == "Deny" RETURN s))
+
+    // Allow statement x target in the same account, then the actions it grants on that target.
+    FOR s IN statements
+      FILTER s.effect == "Allow"
+      FOR t IN targets
+        FILTER t.env == who.environment
+        FILTER LENGTH(FOR r IN s.resources FILTER LIKE(t.arn, r) LIMIT 1 RETURN 1) > 0
+        FOR a IN actions
+          FILTER a.service == t.service
+          FILTER LENGTH(FOR p IN s.actions FILTER LIKE(a.name, p, true) LIMIT 1 RETURN 1) > 0
+          // an explicit Deny anywhere wins
+          FILTER LENGTH(
+            FOR d IN denies
+              FILTER LENGTH(FOR p IN d.actions FILTER LIKE(a.name, p, true) LIMIT 1 RETURN 1) > 0
+              FILTER LENGTH(FOR r IN d.resources FILTER LIKE(t.arn, r) LIMIT 1 RETURN 1) > 0
+              LIMIT 1 RETURN 1) == 0
+          // a permission boundary must allow it too
+          FILTER LENGTH(boundaries) == 0 OR LENGTH(
+            FOR b IN boundary
+              FILTER b.effect == "Allow"
+              FILTER LENGTH(FOR p IN b.actions FILTER LIKE(a.name, p, true) LIMIT 1 RETURN 1) > 0
+              FILTER LENGTH(FOR r IN b.resources FILTER LIKE(t.arn, r) LIMIT 1 RETURN 1) > 0
+              LIMIT 1 RETURN 1) > 0
+          COLLECT from = who._id, to = t.id, level = a.level
+            AGGREGATE actionsGranted = UNIQUE(a.name), policies = UNIQUE(s.policy), via = UNIQUE(s.via)
+          RETURN { from, to, level, actions: SORTED(actionsGranted), policies: SORTED(policies),
+                   viaGroups: SORTED(via[* FILTER CURRENT != null]) }
+)
+
+LET reads = (
+  FOR d IN derived FILTER d.level == "Read"
+    INSERT { _from: d.from, _to: d.to, actions: d.actions, policies: d.policies, viaGroups: d.viaGroups,
+             derivedBy: "derive_effective_access.aql" } INTO canRead
+    RETURN 1)
+LET writes = (
+  FOR d IN derived FILTER d.level == "Write"
+    INSERT { _from: d.from, _to: d.to, actions: d.actions, policies: d.policies, viaGroups: d.viaGroups,
+             derivedBy: "derive_effective_access.aql" } INTO canWrite
+    RETURN 1)
+LET permissions = (
+  FOR d IN derived FILTER d.level == "Permissions management"
+    INSERT { _from: d.from, _to: d.to, actions: d.actions, policies: d.policies, viaGroups: d.viaGroups,
+             derivedBy: "derive_effective_access.aql" } INTO canManagePermissions
+    RETURN 1)
+
+RETURN { canRead: LENGTH(reads), canWrite: LENGTH(writes), canManagePermissions: LENGTH(permissions) }

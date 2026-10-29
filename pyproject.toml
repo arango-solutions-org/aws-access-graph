@@ -1,0 +1,37 @@
+[project]
+name = "aws-access-graph-blueprint"
+version = "0.1.0"
+description = "Ontology-first reference implementation of an AWS access graph on ArangoDB: ontology -> schema -> data -> derived access -> queries"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+    "arango-rdf>=2.0,<3",
+    "python-arango>=8.1,<9",
+    "rdflib>=7.0,<8",
+    "pyshacl>=0.26",
+    "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+catalog = ["policy_sentry==0.15.2"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/awsgraph"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["e2e: needs a running ArangoDB (set ARANGO_URL etc. or .env)"]
+addopts = "-m 'not e2e'"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

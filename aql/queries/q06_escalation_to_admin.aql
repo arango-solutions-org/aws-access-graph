@@ -1,0 +1,20 @@
+// Q6  Which users can escalate to administrator, by assuming an admin role or by changing a role's permissions?
+// bind: { "maxDepth": 6 }
+// Users tagged breakglass=approved are expected to reach admin and are left out.
+WITH IAMRole, IAMUser, S3Bucket, DynamoDBTable, RDSInstance, SecretsManagerSecret, KMSKey, Tag
+FOR u IN IAMUser
+  FILTER u.isAdministrator != true
+  FILTER LENGTH(FOR t IN 1..1 OUTBOUND u hasTag
+                  FILTER t.tagKey == "breakglass" AND t.tagValue == "approved" RETURN 1) == 0
+  FOR v, e, p IN 1..@maxDepth OUTBOUND u canAssumeRole, canManagePermissions
+    PRUNE e != null AND (IS_SAME_COLLECTION("canManagePermissions", e) OR v.isAdministrator == true)
+    OPTIONS { uniqueVertices: "path", order: "bfs" }
+    LET method = IS_SAME_COLLECTION("canAssumeRole", e) AND v.isAdministrator == true ? "ASSUME_ADMIN_ROLE"
+               : IS_SAME_COLLECTION("canManagePermissions", e) AND IS_SAME_COLLECTION("IAMRole", v) ? "MANAGE_ROLE_PERMISSIONS"
+               : null
+    FILTER method != null
+    COLLECT user = u.label, how = method, target = v.label, targetIsAdmin = v.isAdministrator == true
+      INTO routes = { hops: LENGTH(p.edges), route: CONCAT_SEPARATOR(" -> ", p.vertices[*].label) }
+    LET best = FIRST(FOR r IN routes SORT r.hops, r.route RETURN r)
+    SORT best.hops, user, target
+    RETURN { user, method: how, target, targetIsAdmin, hops: best.hops, route: best.route }

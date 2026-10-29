@@ -1,0 +1,14 @@
+# Which internet-facing workloads run as which role? (the data, before derivation)
+# Runs over the ontology plus build/data.ttl.
+PREFIX aws:  <https://w3id.org/arango-solutions/aws-ontology#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?workload ?type ?role WHERE {
+  ?w aws:isPubliclyAccessible true ;
+     a ?t ;
+     rdfs:label ?workload ;
+     (aws:hasInstanceProfile/aws:hasRole)|aws:hasExecutionRole ?r .
+  ?r rdfs:label ?role .
+  BIND(STRAFTER(STR(?t), "#") AS ?type)
+}
+ORDER BY ?workload

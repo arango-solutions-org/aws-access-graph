@@ -1,0 +1,27 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      arangodb:
+        image: arangodb/arangodb:3.12.4
+        env:
+          ARANGO_ROOT_PASSWORD: test
+        ports: ["8529:8529"]
+    env:
+      ARANGO_URL: http://localhost:8529
+      ARANGO_USER: root
+      ARANGO_PASSWORD: test
+      ARANGO_DB: aws_access_graph
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e '.[dev]'
+      - run: ruff check .
+      - run: pytest                       # unit tests, no database
+      - name: Wait for ArangoDB
+        run: for i in $(seq 1 60); do curl -sf -u root:test http://localhost:8529/_api/version && break; sleep 2; done
+      - run: pytest -m e2e                # generate -> load -> derive -> query, exact results

@@ -1,0 +1,198 @@
+@prefix : <https://w3id.org/arango-solutions/aws-ontology#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# SHACL shapes for the AWS Resource Ontology.
+#
+# OWL's open-world semantics can declare a cardinality restriction (e.g. AWSResource
+# has exactly one :arn) without ever being able to flag a specific individual as
+# violating it — a reasoner can only ever conclude "not enough information," never
+# "wrong." SHACL closes the world for validation: these shapes check actual instance
+# data (ontology/examples.ttl) and can fail a specific resource by name.
+#
+# Severity is set deliberately, not uniformly at sh:Violation:
+# - sh:Violation shapes below are already satisfied by every current example
+#   individual (verified by tests/test_shacl_validation.py) and are enforced in CI.
+# - sh:Warning is used where non-conformance is EXPECTED BY DESIGN, not a backlog
+#   to close (drift alerts aws-ontology_REQ-018-arn-completeness and
+#   ...-policy-statement-coverage were closed once this was confirmed):
+#     * :arn — most AWSResource subclasses have a real AWS ARN and were backfilled,
+#       but PolicyStatement, AWSRegion, AvailabilityZone, IAMTrustPolicy,
+#       InlinePolicy, EKSPod, APIGatewayMethod/Resource, EventBridgeTarget,
+#       ContainerImage, Route53RecordSet, AthenaQueryExecution, EMRStep,
+#       OpenSearchIndex, ConfigurationRecorder, CodePipelineStage, and
+#       CognitoIdentityProvider genuinely have NO ARN in real AWS (they're
+#       sub-objects addressed by name/ID within their parent, or account/region-
+#       level singleton settings, not independently ARNed resources) — inventing
+#       one would misrepresent AWS's actual structure. Verified per-type against
+#       real AWS IAM resource-type documentation, not assumed. (Note:
+#       IAMSAMLProvider/IAMOIDCProvider — the OTHER kind of Cognito-adjacent
+#       federation provider, attached directly to an identity pool — DO have
+#       real ARNs as IAM resources; only the user-pool-scoped kind lacks one.)
+#     * :hasStatement — customer-authored policies with a :policyDocument were
+#       linked to a matching structured :PolicyStatement, but bare AWS-managed
+#       policy references (content owned and defined by AWS, not modeled here)
+#       and a few multi-statement/trust documents are intentionally left as
+#       free text only, to avoid fabricating AWS's policy content.
+
+:AWSResourceShape a sh:NodeShape ;
+    sh:targetClass :AWSResource ;
+    sh:property [
+        sh:path :arn ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^arn:aws" ;
+        sh:severity sh:Warning ;
+        sh:message "Every AWS resource should carry exactly one ARN matching ^arn:aws (PRD REQ-016 key)." ;
+    ] .
+
+:VPCShape a sh:NodeShape ;
+    sh:targetClass :VPC ;
+    sh:property [
+        sh:path :belongsToRegion ;
+        sh:class :AWSRegion ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "A VPC must belong to exactly one AWS region." ;
+    ] .
+
+:StepFunctionShape a sh:NodeShape ;
+    sh:targetClass :StepFunction ;
+    sh:property [
+        sh:path :hasActivity ;
+        sh:class :StepFunctionActivity ;
+        sh:minCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "A Step Function must have at least one activity." ;
+    ] .
+
+:PermissionSetShape a sh:NodeShape ;
+    sh:targetClass :PermissionSet ;
+    sh:property [
+        sh:path :hasPolicy ;
+        sh:class :IAMPolicy ;
+        sh:minCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "A permission set must grant at least one policy." ;
+    ] .
+
+:AccountAssignmentShape a sh:NodeShape ;
+    sh:targetClass :AccountAssignment ;
+    sh:property [
+        sh:path :assignsPermissionSet ;
+        sh:class :PermissionSet ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "An account assignment must grant exactly one permission set." ;
+    ] ;
+    sh:property [
+        sh:path :assignsPrincipal ;
+        sh:class :IdentityCenterPrincipal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "An account assignment must target exactly one Identity Center principal." ;
+    ] ;
+    sh:property [
+        sh:path :assignsToAccount ;
+        sh:class :AWSAccount ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "An account assignment must target exactly one AWS account." ;
+    ] .
+
+:S3BucketShape a sh:NodeShape ;
+    sh:targetClass :S3Bucket ;
+    sh:property [
+        sh:path :encrypted ;
+        sh:datatype xsd:boolean ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "If present, an S3 bucket's encrypted flag must be a single boolean." ;
+    ] .
+
+:IAMPolicyShape a sh:NodeShape ;
+    sh:targetClass :IAMPolicy ;
+    sh:property [
+        sh:path :hasStatement ;
+        sh:class :PolicyStatement ;
+        sh:minCount 1 ;
+        sh:severity sh:Warning ;
+        sh:message "An IAM policy should have at least one structured statement (many example policies currently only carry :policyDocument text — see drift alert aws-ontology_REQ-018-policy-statement-coverage)." ;
+    ] .
+
+:LambdaFunctionShape a sh:NodeShape ;
+    sh:targetClass :LambdaFunction ;
+    sh:property [
+        sh:path :hasExecutionRole ;
+        sh:class :IAMRole ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "A Lambda function has at most one execution role." ;
+    ] .
+
+:EC2InstanceShape a sh:NodeShape ;
+    sh:targetClass :EC2Instance ;
+    sh:property [
+        sh:path :hasInstanceProfile ;
+        sh:class :IAMInstanceProfile ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "An EC2 instance can have at most one instance profile (one IAM role) attached." ;
+    ] .
+
+:TagShape a sh:NodeShape ;
+    sh:targetClass :Tag ;
+    sh:property [
+        sh:path :tagKey ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 1 ;
+        sh:maxLength 128 ;
+        sh:severity sh:Violation ;
+        sh:message "A tag must have exactly one key of 1-128 characters." ;
+    ] ;
+    sh:property [
+        sh:path :tagValue ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:maxLength 256 ;
+        sh:severity sh:Violation ;
+        sh:message "A tag has at most one value of up to 256 characters." ;
+    ] .
+
+:ActionShape a sh:NodeShape ;
+    sh:targetClass :Action ;
+    sh:property [
+        sh:path :accessLevel ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:pattern "^(List|Read|Write|Permissions management|Tagging)$" ;
+        sh:severity sh:Violation ;
+        sh:message "An action's access level must be one of AWS's five levels: List, Read, Write, Permissions management, Tagging." ;
+    ] .
+
+:PubliclyAccessibleShape a sh:NodeShape ;
+    sh:targetSubjectsOf :isPubliclyAccessible ;
+    sh:property [
+        sh:path :isPubliclyAccessible ;
+        sh:datatype xsd:boolean ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "If present, a resource's publicly-accessible flag must be a single boolean." ;
+    ] .
+
+:AdministratorFlagShape a sh:NodeShape ;
+    sh:targetSubjectsOf :isAdministrator ;
+    sh:property [
+        sh:path :isAdministrator ;
+        sh:datatype xsd:boolean ;
+        sh:maxCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "If present, an identity's administrator flag must be a single boolean." ;
+    ] .

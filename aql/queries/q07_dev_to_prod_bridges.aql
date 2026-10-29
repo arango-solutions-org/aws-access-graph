@@ -1,0 +1,19 @@
+// Q7  Which development identities can reach production roles, and through which trust link?
+// bind: { "sourceEnv": "dev", "targetEnv": "prod", "maxDepth": 6 }
+WITH IAMRole
+FOR principal IN UNION(
+    (FOR u IN IAMUser FILTER u.environment == @sourceEnv RETURN u),
+    (FOR r IN IAMRole FILTER r.environment == @sourceEnv RETURN r))
+  LET reach = (
+    FOR v, e, p IN 1..@maxDepth OUTBOUND principal canAssumeRole
+      OPTIONS { uniqueVertices: "path", order: "bfs" }
+      FILTER v.environment == @targetEnv
+      LET firstIn = FIRST(FOR i IN 1..LENGTH(p.edges) FILTER p.vertices[i].environment == @targetEnv RETURN i)
+      RETURN { role: v.label, admin: v.isAdministrator == true,
+               bridge: CONCAT(p.vertices[firstIn - 1].label, " -> ", p.vertices[firstIn].label) }
+  )
+  FILTER LENGTH(reach) > 0
+  SORT principal.label
+  RETURN { principal: principal.label, type: PARSE_COLLECTION(principal),
+           productionRoles: SORTED_UNIQUE(reach[*].role), canReachAdmin: true IN reach[*].admin,
+           bridges: SORTED_UNIQUE(reach[*].bridge) }

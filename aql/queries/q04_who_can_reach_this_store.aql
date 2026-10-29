@@ -1,0 +1,22 @@
+// Q4  Which users, roles and workloads can reach this data store? (reverse blast radius)
+// bind: { "storeArn": "arn:aws:s3:::financial-exports", "maxDepth": 6 }
+// The first hop back from the store must be an access grant; after that only role
+// assumption and the workload links (execution role, instance profile) are followed.
+WITH IAMRole, IAMUser, IAMInstanceProfile, EC2Instance, LambdaFunction
+LET store = FIRST(
+  FOR s IN UNION((FOR x IN S3Bucket FILTER x.arn == @storeArn RETURN x),
+                 (FOR x IN DynamoDBTable FILTER x.arn == @storeArn RETURN x))
+    RETURN s)
+FOR v, e, p IN 1..@maxDepth INBOUND store
+    canRead, canWrite, canManagePermissions, canAssumeRole, hasExecutionRole, hasRole, hasInstanceProfile
+  PRUNE e != null AND LENGTH(p.edges) > 1
+        AND PARSE_COLLECTION(e) IN ["canRead", "canWrite", "canManagePermissions"]
+  OPTIONS { uniqueVertices: "path", order: "bfs" }
+  FILTER PARSE_COLLECTION(p.edges[0]) IN ["canRead", "canWrite", "canManagePermissions"]
+  FILTER LENGTH(p.edges[* FILTER PARSE_COLLECTION(CURRENT) IN ["canRead", "canWrite", "canManagePermissions"]]) == 1
+  FILTER NOT IS_SAME_COLLECTION("IAMInstanceProfile", v)
+  COLLECT who = v.label, type = PARSE_COLLECTION(v)
+    INTO routes = { hops: LENGTH(p.edges), access: PARSE_COLLECTION(p.edges[0]) }
+  LET hops = MIN(routes[*].hops)
+  SORT hops, type, who
+  RETURN { who, type, hops, access: SORTED_UNIQUE(routes[*].access) }

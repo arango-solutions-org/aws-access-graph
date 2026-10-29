@@ -1,0 +1,20 @@
+# Which relationships does the ontology define specifically for IAM identities?
+# Generic AWSResource -> AWSResource properties are left out.
+# Runs over ontology/vendor/aws.ttl:  python -m awsgraph.sparql examples/sparql/01_relationships_between_classes.rq
+PREFIX aws:  <https://w3id.org/arango-solutions/aws-ontology#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?property ?domain ?range ?parent WHERE {
+  ?p a owl:ObjectProperty ;
+     rdfs:domain ?d ;
+     rdfs:range ?r .
+  aws:IAMRole rdfs:subClassOf* ?d .               # usable from a role ...
+  ?d rdfs:subClassOf+ aws:IdentityResource .      # ... and defined for identities, not all resources
+  OPTIONAL { ?p rdfs:subPropertyOf ?sp }
+  BIND(STRAFTER(STR(?p), "#") AS ?property)
+  BIND(STRAFTER(STR(?d), "#") AS ?domain)
+  BIND(STRAFTER(STR(?r), "#") AS ?range)
+  BIND(STRAFTER(STR(?sp), "#") AS ?parent)
+}
+ORDER BY ?property

@@ -1,0 +1,14 @@
+// Q1  Which internet-facing workloads run with an administrator role?
+// bind: {}
+// An EC2 instance reaches its role through its instance profile (hasInstanceProfile, hasRole);
+// a Lambda function through its execution role (hasExecutionRole). Because each relationship
+// has its own edge collection, the traversal can't wander anywhere else.
+WITH IAMInstanceProfile, IAMRole
+FOR w IN UNION(
+    (FOR x IN EC2Instance    FILTER x.isPubliclyAccessible == true RETURN x),
+    (FOR x IN LambdaFunction FILTER x.isPubliclyAccessible == true RETURN x))
+  FOR role, e, p IN 1..2 OUTBOUND w hasInstanceProfile, hasRole, hasExecutionRole
+    FILTER IS_SAME_COLLECTION("IAMRole", role) AND role.isAdministrator == true
+    SORT w.label
+    RETURN { workload: w.label, type: PARSE_COLLECTION(w), adminRole: role.label,
+             route: CONCAT_SEPARATOR(" -> ", p.vertices[*].label) }

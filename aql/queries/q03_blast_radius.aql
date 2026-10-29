@@ -1,0 +1,15 @@
+// Q3  What can this user or role reach, including every role it can assume? (blast radius)
+// bind: { "principalArn": "arn:aws:iam::111122223333:user/dev-user", "maxDepth": 6 }
+WITH IAMRole, IAMUser, S3Bucket, DynamoDBTable, RDSInstance, SecretsManagerSecret, KMSKey
+LET start = FIRST(UNION(
+    (FOR u IN IAMUser FILTER u.arn == @principalArn RETURN u),
+    (FOR r IN IAMRole FILTER r.arn == @principalArn RETURN r)))
+FOR v, e, p IN 1..@maxDepth OUTBOUND start canAssumeRole, canRead, canWrite, canManagePermissions
+  PRUNE e != null AND NOT IS_SAME_COLLECTION("canAssumeRole", e)          // a grant ends the route
+  OPTIONS { uniqueVertices: "path", order: "bfs" }
+  FILTER NOT IS_SAME_COLLECTION("canAssumeRole", e)
+  COLLECT type = PARSE_COLLECTION(v), resource = v.label, classification = v.dataClassification
+    INTO routes = { access: PARSE_COLLECTION(e), hops: LENGTH(p.edges), via: p.vertices[-2].label }
+  SORT classification IN ["confidential", "restricted"] DESC, type, resource
+  RETURN { resource, type, classification, access: SORTED_UNIQUE(routes[*].access),
+           via: SORTED_UNIQUE(routes[*].via), hops: MIN(routes[*].hops) }
