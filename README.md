@@ -19,8 +19,8 @@ Each step is a small, readable module and a `make` target, so you can follow it 
 ## Quick start
 
 ```bash
-git clone https://github.com/arango-solutions-org/aws-access-graph-blueprint.git
-cd aws-access-graph-blueprint
+git clone https://github.com/arango-solutions-org/aws-access-graph.git
+cd aws-access-graph
 python -m venv .venv && source .venv/bin/activate
 make install
 cp .env.example .env        # point at your ArangoDB, or:

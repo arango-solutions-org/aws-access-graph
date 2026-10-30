@@ -1,5 +1,5 @@
 [project]
-name = "aws-access-graph-blueprint"
+name = "aws-access-graph"
 version = "0.1.0"
 description = "Ontology-first reference implementation of an AWS access graph on ArangoDB: ontology -> schema -> data -> derived access -> queries"
 readme = "README.md"
