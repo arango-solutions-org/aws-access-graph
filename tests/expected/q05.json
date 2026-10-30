@@ -1,0 +1,32 @@
+[
+  {
+    "routes": [
+      {
+        "access": [
+          "canWrite"
+        ],
+        "grantedBy": [
+          "app-data-access"
+        ],
+        "hops": 4,
+        "route": "dev-user -> dev-deployer-role -> prod-deployer-role -> app-role -> financial-exports"
+      },
+      {
+        "access": [
+          "canManagePermissions",
+          "canRead",
+          "canWrite"
+        ],
+        "grantedBy": [
+          "AdministratorAccess"
+        ],
+        "hops": 4,
+        "route": "dev-user -> dev-deployer-role -> prod-deployer-role -> prod-admin-role -> financial-exports"
+      }
+    ],
+    "onEveryRoute": [
+      "dev-user -> dev-deployer-role",
+      "dev-deployer-role -> prod-deployer-role"
+    ]
+  }
+]

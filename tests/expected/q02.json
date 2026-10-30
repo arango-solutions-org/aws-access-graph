@@ -1,0 +1,32 @@
+[
+  {
+    "workload": "public-web-instance",
+    "store": "customer-data",
+    "storeType": "S3Bucket",
+    "access": [
+      "canRead"
+    ],
+    "hops": 4,
+    "route": "public-web-instance -> web-instance-profile -> web-role -> app-role -> customer-data"
+  },
+  {
+    "workload": "public-web-instance",
+    "store": "financial-exports",
+    "storeType": "S3Bucket",
+    "access": [
+      "canWrite"
+    ],
+    "hops": 4,
+    "route": "public-web-instance -> web-instance-profile -> web-role -> app-role -> financial-exports"
+  },
+  {
+    "workload": "public-webhook-function",
+    "store": "customer-data",
+    "storeType": "S3Bucket",
+    "access": [
+      "canWrite"
+    ],
+    "hops": 2,
+    "route": "public-webhook-function -> webhook-role -> customer-data"
+  }
+]

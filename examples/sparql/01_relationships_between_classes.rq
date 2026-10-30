@@ -1,12 +1,14 @@
-# Which relationships does the ontology define specifically for IAM identities?
-# Generic AWSResource -> AWSResource properties are left out.
+# What does the ontology say an IAM role can have? Relationships and attributes whose domain
+# is IAMRole or one of its identity superclasses; generic AWSResource properties are left out.
+# Same question as aql/queries/q09_ontology_relationships_for_a_class.aql.
 # Runs over ontology/vendor/aws.ttl:  python -m awsgraph.sparql examples/sparql/01_relationships_between_classes.rq
 PREFIX aws:  <https://w3id.org/arango-solutions/aws-ontology#>
 PREFIX owl:  <http://www.w3.org/2002/07/owl#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?property ?domain ?range ?parent WHERE {
-  ?p a owl:ObjectProperty ;
+  VALUES ?kind { owl:ObjectProperty owl:DatatypeProperty }
+  ?p a ?kind ;
      rdfs:domain ?d ;
      rdfs:range ?r .
   aws:IAMRole rdfs:subClassOf* ?d .               # usable from a role ...

@@ -3,7 +3,7 @@
 
 PY ?= python
 
-.PHONY: all install db generate validate schema load derive queries test e2e reset catalog clean
+.PHONY: all install db generate validate schema load derive queries test e2e expected reset catalog clean
 
 all: generate validate schema load derive queries
 
@@ -36,6 +36,9 @@ test:               ## unit tests (no database)
 
 e2e:                ## end-to-end test against the database in .env
 	$(PY) -m pytest -m e2e
+
+expected:           ## re-record tests/expected from a live run and re-render docs/RESULTS.md
+	UPDATE_EXPECTED=1 $(PY) -m pytest -m e2e && $(PY) tools/render_results.py
 
 reset:              ## drop the graph and every collection in the project database
 	$(PY) -m awsgraph reset

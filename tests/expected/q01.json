@@ -1,0 +1,8 @@
+[
+  {
+    "workload": "public-bastion-instance",
+    "type": "EC2Instance",
+    "adminRole": "prod-admin-role",
+    "route": "public-bastion-instance -> bastion-instance-profile -> prod-admin-role"
+  }
+]

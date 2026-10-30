@@ -1,0 +1,298 @@
+[
+  {
+    "resource": "platform-team-prod-table-1",
+    "type": "DynamoDBTable",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "security-team-prod-table-1",
+    "type": "DynamoDBTable",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "web-team-prod-table-1",
+    "type": "DynamoDBTable",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "data-team-prod-warehouse",
+    "type": "RDSInstance",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "analytics-events",
+    "type": "S3Bucket",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "app-team-prod-records",
+    "type": "S3Bucket",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "archived-reports",
+    "type": "S3Bucket",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "customer-data",
+    "type": "S3Bucket",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "app-role",
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "data-team-prod-records",
+    "type": "S3Bucket",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "financial-exports",
+    "type": "S3Bucket",
+    "classification": "restricted",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "app-role",
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "integration-team-prod-records",
+    "type": "S3Bucket",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "migration-scratch",
+    "type": "S3Bucket",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "platform-team-prod-reports",
+    "type": "S3Bucket",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "security-team-prod-reports",
+    "type": "S3Bucket",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "web-team-prod-records",
+    "type": "S3Bucket",
+    "classification": "confidential",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "app-team-prod-credentials",
+    "type": "SecretsManagerSecret",
+    "classification": "restricted",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "data-team-prod-credentials",
+    "type": "SecretsManagerSecret",
+    "classification": "restricted",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "integration-team-prod-credentials",
+    "type": "SecretsManagerSecret",
+    "classification": "restricted",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "platform-team-prod-credentials",
+    "type": "SecretsManagerSecret",
+    "classification": "restricted",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "security-team-prod-credentials",
+    "type": "SecretsManagerSecret",
+    "classification": "restricted",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  },
+  {
+    "resource": "web-team-prod-credentials",
+    "type": "SecretsManagerSecret",
+    "classification": "restricted",
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ],
+    "via": [
+      "prod-admin-role"
+    ],
+    "hops": 4
+  }
+]

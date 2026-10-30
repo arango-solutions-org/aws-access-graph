@@ -1,0 +1,26 @@
+[
+  {
+    "user": "etl-service-user",
+    "method": "MANAGE_ROLE_PERMISSIONS",
+    "target": "etl-pipeline-role",
+    "targetIsAdmin": false,
+    "hops": 1,
+    "route": "etl-service-user -> etl-pipeline-role"
+  },
+  {
+    "user": "ci-service-user",
+    "method": "ASSUME_ADMIN_ROLE",
+    "target": "prod-admin-role",
+    "targetIsAdmin": true,
+    "hops": 3,
+    "route": "ci-service-user -> dev-deployer-role -> prod-deployer-role -> prod-admin-role"
+  },
+  {
+    "user": "dev-user",
+    "method": "ASSUME_ADMIN_ROLE",
+    "target": "prod-admin-role",
+    "targetIsAdmin": true,
+    "hops": 3,
+    "route": "dev-user -> dev-deployer-role -> prod-deployer-role -> prod-admin-role"
+  }
+]

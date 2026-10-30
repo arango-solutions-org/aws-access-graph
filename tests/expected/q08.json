@@ -1,0 +1,34 @@
+[
+  {
+    "bucket": "customer-data",
+    "ownerTeam": "app-team",
+    "ownerStatus": "ACTIVE",
+    "outsideWriters": [
+      "webhook-role (integration-team)"
+    ]
+  },
+  {
+    "bucket": "financial-exports",
+    "ownerTeam": "app-team",
+    "ownerStatus": "ACTIVE",
+    "outsideWriters": [
+      "etl-pipeline-role (data-team)"
+    ]
+  },
+  {
+    "bucket": "archived-reports",
+    "ownerTeam": "retired-team",
+    "ownerStatus": "INACTIVE_TEAM",
+    "outsideWriters": [
+      "etl-service-user (data-team, has an inline policy)"
+    ]
+  },
+  {
+    "bucket": "migration-scratch",
+    "ownerTeam": null,
+    "ownerStatus": "NO_OWNER",
+    "outsideWriters": [
+      "etl-pipeline-role (data-team)"
+    ]
+  }
+]

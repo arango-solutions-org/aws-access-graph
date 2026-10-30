@@ -1,0 +1,41 @@
+[
+  {
+    "principal": "ci-service-user",
+    "type": "IAMUser",
+    "productionRoles": [
+      "app-role",
+      "prod-admin-role",
+      "prod-deployer-role"
+    ],
+    "canReachAdmin": true,
+    "bridges": [
+      "dev-deployer-role -> prod-deployer-role"
+    ]
+  },
+  {
+    "principal": "dev-deployer-role",
+    "type": "IAMRole",
+    "productionRoles": [
+      "app-role",
+      "prod-admin-role",
+      "prod-deployer-role"
+    ],
+    "canReachAdmin": true,
+    "bridges": [
+      "dev-deployer-role -> prod-deployer-role"
+    ]
+  },
+  {
+    "principal": "dev-user",
+    "type": "IAMUser",
+    "productionRoles": [
+      "app-role",
+      "prod-admin-role",
+      "prod-deployer-role"
+    ],
+    "canReachAdmin": true,
+    "bridges": [
+      "dev-deployer-role -> prod-deployer-role"
+    ]
+  }
+]

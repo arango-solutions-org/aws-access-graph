@@ -1,0 +1,104 @@
+[
+  {
+    "category": "IdentityResource",
+    "instances": 362,
+    "byClass": [
+      {
+        "class": "PolicyStatement",
+        "instances": 127
+      },
+      {
+        "class": "IAMRole",
+        "instances": 57
+      },
+      {
+        "class": "IAMTrustPolicy",
+        "instances": 57
+      },
+      {
+        "class": "IAMUser",
+        "instances": 44
+      },
+      {
+        "class": "CustomerManagedPolicy",
+        "instances": 43
+      },
+      {
+        "class": "IAMInstanceProfile",
+        "instances": 15
+      },
+      {
+        "class": "IAMGroup",
+        "instances": 12
+      },
+      {
+        "class": "InlinePolicy",
+        "instances": 3
+      },
+      {
+        "class": "AWSManagedPolicy",
+        "instances": 2
+      },
+      {
+        "class": "IAMPermissionBoundary",
+        "instances": 1
+      },
+      {
+        "class": "OrganizationalUnit",
+        "instances": 1
+      }
+    ]
+  },
+  {
+    "category": "StorageResource",
+    "instances": 45,
+    "byClass": [
+      {
+        "class": "S3Bucket",
+        "instances": 45
+      }
+    ]
+  },
+  {
+    "category": "ComputeResource",
+    "instances": 40,
+    "byClass": [
+      {
+        "class": "EC2Instance",
+        "instances": 27
+      },
+      {
+        "class": "LambdaFunction",
+        "instances": 13
+      }
+    ]
+  },
+  {
+    "category": "SecurityResource",
+    "instances": 25,
+    "byClass": [
+      {
+        "class": "KMSKey",
+        "instances": 13
+      },
+      {
+        "class": "SecretsManagerSecret",
+        "instances": 12
+      }
+    ]
+  },
+  {
+    "category": "DatabaseResource",
+    "instances": 14,
+    "byClass": [
+      {
+        "class": "DynamoDBTable",
+        "instances": 12
+      },
+      {
+        "class": "RDSInstance",
+        "instances": 2
+      }
+    ]
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "property": "canAssumeRole",
+    "domain": "IAMEntity",
+    "range": "IAMRole",
+    "parent": null
+  },
+  {
+    "property": "canManagePermissions",
+    "domain": "IAMIdentity",
+    "range": "AWSResource",
+    "parent": "hasEffectiveAccess"
+  },
+  {
+    "property": "canRead",
+    "domain": "IAMIdentity",
+    "range": "AWSResource",
+    "parent": "hasEffectiveAccess"
+  },
+  {
+    "property": "canWrite",
+    "domain": "IAMIdentity",
+    "range": "AWSResource",
+    "parent": "hasEffectiveAccess"
+  },
+  {
+    "property": "hasEffectiveAccess",
+    "domain": "IAMIdentity",
+    "range": "AWSResource",
+    "parent": null
+  },
+  {
+    "property": "hasPermissionBoundary",
+    "domain": "IAMEntity",
+    "range": "IAMPermissionBoundary",
+    "parent": null
+  },
+  {
+    "property": "hasPolicyAttachment",
+    "domain": "IAMIdentity",
+    "range": "IAMPolicy",
+    "parent": null
+  },
+  {
+    "property": "hasTrustRelationship",
+    "domain": "IAMRole",
+    "range": "IAMTrustPolicy",
+    "parent": null
+  },
+  {
+    "property": "isAdministrator",
+    "domain": "IAMEntity",
+    "range": "boolean",
+    "parent": null
+  },
+  {
+    "property": "maxSessionDuration",
+    "domain": "IAMRole",
+    "range": "integer",
+    "parent": null
+  }
+]

@@ -1,0 +1,130 @@
+[
+  {
+    "who": "app-role",
+    "type": "IAMRole",
+    "hops": 1,
+    "access": [
+      "canWrite"
+    ]
+  },
+  {
+    "who": "etl-pipeline-role",
+    "type": "IAMRole",
+    "hops": 1,
+    "access": [
+      "canWrite"
+    ]
+  },
+  {
+    "who": "prod-admin-role",
+    "type": "IAMRole",
+    "hops": 1,
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ]
+  },
+  {
+    "who": "platform-prod-admin",
+    "type": "IAMUser",
+    "hops": 1,
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ]
+  },
+  {
+    "who": "prod-deployer-role",
+    "type": "IAMRole",
+    "hops": 2,
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ]
+  },
+  {
+    "who": "web-role",
+    "type": "IAMRole",
+    "hops": 2,
+    "access": [
+      "canWrite"
+    ]
+  },
+  {
+    "who": "breakglass-user",
+    "type": "IAMUser",
+    "hops": 2,
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ]
+  },
+  {
+    "who": "etl-service-user",
+    "type": "IAMUser",
+    "hops": 2,
+    "access": [
+      "canWrite"
+    ]
+  },
+  {
+    "who": "private-app-instance",
+    "type": "EC2Instance",
+    "hops": 3,
+    "access": [
+      "canWrite"
+    ]
+  },
+  {
+    "who": "public-bastion-instance",
+    "type": "EC2Instance",
+    "hops": 3,
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ]
+  },
+  {
+    "who": "dev-deployer-role",
+    "type": "IAMRole",
+    "hops": 3,
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ]
+  },
+  {
+    "who": "public-web-instance",
+    "type": "EC2Instance",
+    "hops": 4,
+    "access": [
+      "canWrite"
+    ]
+  },
+  {
+    "who": "ci-service-user",
+    "type": "IAMUser",
+    "hops": 4,
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ]
+  },
+  {
+    "who": "dev-user",
+    "type": "IAMUser",
+    "hops": 4,
+    "access": [
+      "canManagePermissions",
+      "canRead",
+      "canWrite"
+    ]
+  }
+]

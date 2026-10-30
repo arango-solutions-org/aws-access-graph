@@ -9,12 +9,12 @@ Each step is a small, readable module and a `make` target, so you can follow it 
 
 | Step | What happens | Code | Run |
 |---|---|---|---|
-| 1. Ontology | Pin the open [AWS ontology](https://github.com/arango-solutions-org/aws-ontology) and pick the classes and properties this project uses | `ontology/`, `src/awsgraph/ontology.py` | |
-| 2. Data | Generate a synthetic AWS estate as RDF. Every statement is checked against the ontology's domain and range, then the data is checked against its SHACL shapes | `generate.py`, `scenarios.py`, `validate.py` | `make generate validate` |
-| 3. Schema | One collection per class, one edge collection per relationship, a named graph built from domain and range, and indexes. The ontology itself is loaded alongside | `schema.py` | `make schema` |
-| 4. Load | Load the data with [ArangoRDF](https://github.com/ArangoDB-Community/ArangoRDF) | `load.py` | `make load` |
-| 5. Derive | Evaluate IAM policies in AQL and write `canRead`, `canWrite`, `canManagePermissions` and `isAdministrator` | `aql/derive_*.aql` | `make derive` |
-| 6. Query | Eight security questions and two ontology questions in AQL, plus SPARQL and Cypher examples | `aql/queries/`, `examples/` | `make queries` |
+| [1. Ontology](docs/01-ontology.md) | Pin the open [AWS ontology](https://github.com/arango-solutions-org/aws-ontology) and pick the classes and properties this project uses | `ontology/`, `src/awsgraph/ontology.py` | |
+| [2. Data](docs/02-data.md) | Generate a synthetic AWS estate as RDF. Every statement is checked against the ontology's domain and range, then the data is checked against its SHACL shapes | `generate.py`, `scenarios.py`, `validate.py` | `make generate validate` |
+| [3. Schema](docs/03-schema.md) | One collection per class, one edge collection per relationship, a named graph built from domain and range, and indexes. The ontology itself is loaded alongside | `schema.py` | `make schema` |
+| [4. Load](docs/03-schema.md#loading-with-arangordf) | Load the data with [ArangoRDF](https://github.com/ArangoDB-Community/ArangoRDF) | `load.py` | `make load` |
+| [5. Derive](docs/04-derive.md) | Evaluate IAM policies in AQL and write `canRead`, `canWrite`, `canManagePermissions` and `isAdministrator` | `aql/derive_*.aql` | `make derive` |
+| [6. Query](docs/05-queries.md) | Eight security questions and two ontology questions in AQL, plus SPARQL and Cypher examples | `aql/queries/`, `examples/` | `make queries` |
 
 ## Quick start
 
@@ -29,7 +29,9 @@ make all
 ```
 
 `make test` runs the unit tests (no database needed). `make e2e` runs the whole pipeline
-against the database in `.env` and checks every query result.
+against the database in `.env` and checks every query result against
+[docs/RESULTS.md](docs/RESULTS.md). If you change the data or a query on purpose, `make expected`
+re-records the results and re-renders that page.
 
 ## The questions
 
