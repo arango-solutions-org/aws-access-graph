@@ -1,6 +1,6 @@
-# AWS access graph blueprint
+# AWS identiny and access management (IAM) graph blueprint
 
-A reference implementation of an AWS access graph on ArangoDB that starts from an open
+A reference implementation of an AWS identiny and access management (IAM) graph on ArangoDB that starts from an open
 ontology and works forward:
 
 **ontology → schema → data → derived access → queries**
