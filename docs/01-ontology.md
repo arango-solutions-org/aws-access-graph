@@ -13,7 +13,7 @@ validation rules). `SOURCE.md` records the exact commits and a checksum, and
 `tests/test_ontology.py` fails if either file changes, so an ontology upgrade is always a
 deliberate step.
 
-Two additions to the ontology were made for this project and proposed upstream:
+Two additions to the ontology were made for this project and are now merged upstream:
 
 | Added | Why the blueprint needs it |
 |---|---|
@@ -21,7 +21,7 @@ Two additions to the ontology were made for this project and proposed upstream:
 | `Tag`, `hasTag`, `tagKey`, `tagValue` | Ownership (`team=...`) and exceptions (`breakglass=approved`) |
 | `accessLevel` on `Action` | AWS's own classification of every API action: List, Read, Write, Permissions management, Tagging |
 | `isPubliclyAccessible` | Which workloads face the internet |
-| `hasEffectiveAccess` → `canRead`, `canWrite`, `canManagePermissions` | The result of evaluating policies. Derived, not stored by AWS |
+| `hasEffectiveAccess` → `canList`, `canRead`, `canWrite`, `canManagePermissions`, `canTag` | The result of evaluating policies, one sub-property per access level. Derived, not stored by AWS |
 | `isAdministrator` | Derived, as above |
 
 ## The profile

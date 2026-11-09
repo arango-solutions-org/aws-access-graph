@@ -44,10 +44,11 @@ def main(argv: list[str] | None = None) -> int:
                 from .db import reset
                 print(f"dropped {len(reset(db))} collections")
             elif step == "schema":
-                from .schema import create, load_ontology
+                from .schema import create, create_knowledge_graph, load_ontology
                 print(create(db))
                 load_ontology(db)
-                print("loaded the ontology into the AWSAccessGraph graph")
+                print("loaded the ontology into OntologyGraph")
+                print(create_knowledge_graph(db))
             elif step == "load":
                 from .load import load
                 print(load(db))

@@ -5,10 +5,17 @@ make derive
 ```
 
 The data holds policies, not access. This step evaluates the policies inside ArangoDB and
-writes the result as three edge collections: `canRead`, `canWrite` and
-`canManagePermissions`. It also sets `isAdministrator` on every user and role. These are the
-derived terms from the ontology (`hasEffectiveAccess` and its sub-properties). The queries in
-the next step traverse them.
+writes the result as the ontology's derived terms:
+
+- one edge collection per AWS access level: `canList`, `canRead`, `canWrite`,
+  `canManagePermissions` and `canTag`;
+- `hasEffectiveAccess`, their parent property, once for every principal and resource that has
+  any of them. The ontology requires this pairing (REQ-045), so a query or tool that doesn't
+  apply RDFS reasoning still finds the access. Its `levels` attribute lists the level edges it
+  stands for;
+- `isAdministrator` on every user and role.
+
+The queries in the next step traverse the level edges.
 
 Two AQL files do the work:
 
@@ -30,9 +37,9 @@ Two AQL files do the work:
    account ID, so the account is compared through the `environment` attribute.
 5. **Deny and boundaries.** An explicit `Deny` beats any `Allow`. If a permission boundary is
    set, it must allow the action too.
-6. **Access level.** Every allowed action has AWS's access level. Read gives `canRead`, Write
-   gives `canWrite`, and Permissions management gives `canManagePermissions`. List and Tagging
-   don't produce an edge.
+6. **Access level.** Every allowed action has AWS's access level, and each level gives its own
+   edge: List gives `canList`, Read `canRead`, Write `canWrite`, Permissions management
+   `canManagePermissions` and Tagging `canTag`.
 7. **Administrator.** `isAdministrator` is true when `*` on `*` is allowed, not denied, and not
    limited by a boundary.
 
@@ -58,7 +65,7 @@ It also doesn't evaluate role assumption from trust policies; see
 [the modelling compromise](02-data.md#one-modelling-compromise).
 
 On real data, take effective access from a tool built for it, such as IAM Access Analyzer or a
-CIEM product, and write it into the same three edge collections. The queries don't change.
+CIEM product, and write it into the same edge collections. The queries don't change.
 
 ## Checking the AQL
 
@@ -69,8 +76,9 @@ without a database:
 - **The end-to-end test** checks that the AQL produces exactly the same edges and
   administrators.
 
-On the demo data, both give 589 `canRead`, 375 `canWrite` and 220 `canManagePermissions` edges,
-and three administrators: `prod-admin-role`, `platform-dev-admin` and `platform-prod-admin`.
-The derivation takes about 4 seconds.
+On the demo data, both give 439 `canList`, 589 `canRead`, 375 `canWrite`, 220
+`canManagePermissions` and 219 `canTag` edges, paired by 670 `hasEffectiveAccess` edges, and
+three administrators: `prod-admin-role`, `platform-dev-admin` and `platform-prod-admin`. The
+derivation takes about 6 seconds.
 
 Next: [5. Queries](05-queries.md)

@@ -168,11 +168,13 @@
 :belongsToRegion a owl:ObjectProperty ;
     rdfs:label "belongs to region" ;
     rdfs:comment "Relates resources to the AWS region they reside in" ;
+    rdfs:domain :AWSResource ;
     rdfs:range :AWSRegion .
 
 :belongsToVPC a owl:ObjectProperty ;
     rdfs:label "belongs to VPC" ;
     rdfs:comment "Relates resources to their VPC" ;
+    rdfs:domain :AWSResource ;
     rdfs:range :VPC .
 
 :canAssumeRole a owl:ObjectProperty ;
@@ -233,8 +235,9 @@
 
 :compliesWith a owl:ObjectProperty ;
     rdfs:label "complies with" ;
-    rdfs:comment "Indicates compliance with standards, regulations, or policies" ;
-    rdfs:domain :AWSResource .
+    rdfs:comment "Indicates compliance with a standard, rule or policy as modeled in AWS (e.g. a Config rule, conformance pack, Security Hub standard or IAM policy)" ;
+    rdfs:domain :AWSResource ;
+    rdfs:range :AWSResource .
 
 :containedBy a owl:ObjectProperty ;
     rdfs:label "contained by" ;
@@ -436,7 +439,8 @@
 :integrationWith a owl:ObjectProperty ;
     rdfs:label "integration with" ;
     rdfs:comment "Indicates integration between API Gateway methods and backend services" ;
-    rdfs:domain :APIGatewayMethod .
+    rdfs:domain :APIGatewayMethod ;
+    rdfs:range :AWSResource .
 
 :isDefault a owl:DatatypeProperty ;
     rdfs:label "is default" ;
@@ -667,7 +671,8 @@
 :routesTrafficThrough a owl:ObjectProperty ;
     rdfs:label "routes traffic through" ;
     rdfs:comment "Indicates traffic routing relationships" ;
-    rdfs:domain :RouteTable .
+    rdfs:domain :RouteTable ;
+    rdfs:range :AWSResource .
 
 :ruleOf a owl:ObjectProperty ;
     rdfs:label "rule of" ;
@@ -754,15 +759,17 @@
     rdfs:comment "Inverse of uses" ;
     owl:inverseOf :uses .
 
-:usesFargate a owl:ObjectProperty ;
+:usesFargate a owl:DatatypeProperty ;
     rdfs:label "uses Fargate" ;
-    rdfs:comment "Indicates that a service uses AWS Fargate for serverless containers" ;
-    rdfs:domain :ECSService .
+    rdfs:comment "Whether the service runs its tasks on AWS Fargate (serverless containers) rather than on EC2 instances" ;
+    rdfs:domain :ECSService ;
+    rdfs:range xsd:boolean .
 
 :violates a owl:ObjectProperty ;
     rdfs:label "violates" ;
-    rdfs:comment "Indicates compliance violations" ;
-    rdfs:domain :AWSResource .
+    rdfs:comment "Indicates that a resource violates a standard, rule or policy as modeled in AWS (e.g. a Config rule, conformance pack, Security Hub standard or IAM policy)" ;
+    rdfs:domain :AWSResource ;
+    rdfs:range :AWSResource .
 
 :visibilityTimeoutSeconds a owl:DatatypeProperty ;
     rdfs:label "visibility timeout seconds" ;
@@ -925,8 +932,9 @@
 
 :enforces a owl:ObjectProperty ;
     rdfs:label "enforces" ;
-    rdfs:comment "Indicates that a resource enforces compliance rules" ;
-    rdfs:domain :AWSResource .
+    rdfs:comment "Indicates that a resource enforces compliance rules on another resource (e.g. a WAF web ACL or service control policy)" ;
+    rdfs:domain :AWSResource ;
+    rdfs:range :AWSResource .
 
 :hasAvailabilityZone a owl:ObjectProperty ;
     rdfs:label "has availability zone" ;
@@ -1023,6 +1031,7 @@
 :publishesToTopic a owl:ObjectProperty ;
     rdfs:label "publishes to topic" ;
     rdfs:comment "Indicates that a service publishes messages to an SNS topic" ;
+    rdfs:domain :AWSResource ;
     rdfs:range :SNSTopic .
 
 :replacedBy a owl:ObjectProperty ;
@@ -1040,16 +1049,19 @@
 :routesEventTo a owl:ObjectProperty ;
     rdfs:label "routes event to" ;
     rdfs:comment "Indicates event routing from EventBridge to target services" ;
-    rdfs:domain :EventBridge .
+    rdfs:domain :EventBridge ;
+    rdfs:range :AWSResource .
 
 :runsPod a owl:ObjectProperty ;
     rdfs:label "runs pod" ;
     rdfs:comment "Relates EKS node groups or clusters to their pods" ;
+    rdfs:domain :ComputeResource ;
     rdfs:range :EKSPod .
 
 :sendsToQueue a owl:ObjectProperty ;
     rdfs:label "sends to queue" ;
     rdfs:comment "Indicates that a service sends messages to an SQS queue" ;
+    rdfs:domain :AWSResource ;
     rdfs:range :SQSQueue .
 
 :subscribesTo a owl:ObjectProperty ;
@@ -1066,6 +1078,7 @@
 :triggersStepFunction a owl:ObjectProperty ;
     rdfs:label "triggers step function" ;
     rdfs:comment "Indicates that a service triggers a Step Function execution" ;
+    rdfs:domain :AWSResource ;
     rdfs:range :StepFunction .
 
 :uses a owl:ObjectProperty ;
@@ -1075,6 +1088,7 @@
 :usesContainerImage a owl:ObjectProperty ;
     rdfs:label "uses container image" ;
     rdfs:comment "Relates container services to their container images" ;
+    rdfs:domain :AWSResource ;
     rdfs:range :ContainerImage .
 
 :APIGatewayStage a owl:Class ;
@@ -2750,9 +2764,16 @@
 # Identity attachments, resource tags and exposure (security analysis)
 :hasExecutionRole a owl:ObjectProperty ;
     rdfs:label "has execution role" ;
-    rdfs:comment "The IAM role a compute resource runs as, granting it permissions to call AWS services (e.g. a Lambda function's execution role, which Lambda assumes when the function is invoked). See https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html" ;
+    rdfs:comment "The IAM role the resource itself uses to call AWS services (e.g. a Lambda function's execution role, which Lambda assumes when the function is invoked). Not a role an AWS service uses only to operate the resource on its behalf: for ECS, record the task role on the task definition (taskRoleArn), not the task execution role the ECS agent uses to pull images and write logs. See https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html" ;
     rdfs:subPropertyOf :uses ;
-    rdfs:domain :ComputeResource ;
+    rdfs:domain :AWSResource ;
+    rdfs:range :IAMRole .
+
+:hasTaskExecutionRole a owl:ObjectProperty ;
+    rdfs:label "has task execution role" ;
+    rdfs:comment "The IAM role the ECS agent uses on a task definition's behalf to pull container images and write logs (executionRoleArn). Distinct from the task role the task's own code uses, which is its hasExecutionRole. See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html" ;
+    rdfs:subPropertyOf :uses ;
+    rdfs:domain :ECSTaskDefinition ;
     rdfs:range :IAMRole .
 
 :hasInstanceProfile a owl:ObjectProperty ;
@@ -2764,7 +2785,8 @@
 
 :Tag a owl:Class ;
     rdfs:label "Tag" ;
-    rdfs:comment "A key-value label assigned to an AWS resource, commonly used for ownership, cost allocation and attribute-based access control. Tags are metadata on a resource and have no ARN of their own. See https://docs.aws.amazon.com/tag-editor/latest/userguide/tagging.html" .
+    rdfs:comment "A key-value label assigned to an AWS resource, commonly used for ownership, cost allocation and attribute-based access control. Tags are metadata on a resource and have no ARN of their own. See https://docs.aws.amazon.com/tag-editor/latest/userguide/tagging.html" ;
+    owl:disjointWith :AWSResource .
 
 :hasTag a owl:ObjectProperty ;
     rdfs:label "has tag" ;
@@ -2802,34 +2824,44 @@
 # https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html
 # Tools that do that evaluation (e.g. IAM Access Analyzer, a policy simulator, or a graph
 # traversal) can record their result with these terms.
+# The subject is whoever the evaluation reports access for: usually an IAM user, role or group,
+# but also an IAM Identity Center user or group (through a permission set), an external AWS
+# account (as in IAM Access Analyzer findings), or a resource acting through its execution role.
+# The domain is therefore AWSResource. Sub-properties inherit the domain and range.
+# Record hasEffectiveAccess alongside the specific access level, so queries and graph imports
+# that don't apply RDFS reasoning still find the access.
 :hasEffectiveAccess a owl:ObjectProperty ;
     rdfs:label "has effective access" ;
-    rdfs:comment "Derived: after policy evaluation, the identity is allowed at least one action on the resource. For a group, this is the access its members inherit through it. Not an AWS attribute; computed from policies, boundaries, SCPs and role assumption." ;
-    rdfs:domain :IAMIdentity ;
+    rdfs:comment "Derived: after policy evaluation, the principal is allowed at least one action on the resource. For an IAM group, this is the access its members inherit through it. Not an AWS attribute; computed from policies, boundaries, SCPs and role assumption." ;
+    rdfs:domain :AWSResource ;
     rdfs:range :AWSResource .
+
+:canList a owl:ObjectProperty ;
+    rdfs:label "can list" ;
+    rdfs:comment "Derived: the principal is effectively allowed at least one List access-level action on the resource (e.g. s3:ListBucket, ec2:DescribeInstances)" ;
+    rdfs:subPropertyOf :hasEffectiveAccess .
 
 :canRead a owl:ObjectProperty ;
     rdfs:label "can read" ;
-    rdfs:comment "Derived: the identity is effectively allowed at least one Read access-level action on the resource (e.g. s3:GetObject)" ;
-    rdfs:subPropertyOf :hasEffectiveAccess ;
-    rdfs:domain :IAMIdentity ;
-    rdfs:range :AWSResource .
+    rdfs:comment "Derived: the principal is effectively allowed at least one Read access-level action on the resource (e.g. s3:GetObject)" ;
+    rdfs:subPropertyOf :hasEffectiveAccess .
 
 :canWrite a owl:ObjectProperty ;
     rdfs:label "can write" ;
-    rdfs:comment "Derived: the identity is effectively allowed at least one Write access-level action on the resource (e.g. s3:PutObject, s3:DeleteObject)" ;
-    rdfs:subPropertyOf :hasEffectiveAccess ;
-    rdfs:domain :IAMIdentity ;
-    rdfs:range :AWSResource .
+    rdfs:comment "Derived: the principal is effectively allowed at least one Write access-level action on the resource (e.g. s3:PutObject, s3:DeleteObject)" ;
+    rdfs:subPropertyOf :hasEffectiveAccess .
 
 :canManagePermissions a owl:ObjectProperty ;
     rdfs:label "can manage permissions" ;
-    rdfs:comment "Derived: the identity is effectively allowed at least one Permissions management access-level action on the resource (e.g. s3:PutBucketPolicy, iam:AttachRolePolicy), so it can change who else has access" ;
-    rdfs:subPropertyOf :hasEffectiveAccess ;
-    rdfs:domain :IAMIdentity ;
-    rdfs:range :AWSResource .
+    rdfs:comment "Derived: the principal is effectively allowed at least one Permissions management access-level action on the resource (e.g. s3:PutBucketPolicy, iam:AttachRolePolicy), so it can change who else has access" ;
+    rdfs:subPropertyOf :hasEffectiveAccess .
 
-:isAdministrator a owl:DatatypeProperty ;
+:canTag a owl:ObjectProperty ;
+    rdfs:label "can tag" ;
+    rdfs:comment "Derived: the principal is effectively allowed at least one Tagging access-level action on the resource (e.g. s3:PutBucketTagging, ec2:CreateTags). Tags can drive attribute-based access control, so tagging can change access" ;
+    rdfs:subPropertyOf :hasEffectiveAccess .
+
+:isAdministrator a owl:DatatypeProperty, owl:FunctionalProperty ;
     rdfs:label "is administrator" ;
     rdfs:comment "Derived: whether the user's or role's effective permissions amount to full administrative access (e.g. Allow * on *, as granted by the AWS managed policy AdministratorAccess)" ;
     rdfs:domain :IAMEntity ;

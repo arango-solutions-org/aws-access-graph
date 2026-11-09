@@ -10,10 +10,13 @@ from arango.database import StandardDatabase
 
 from .ontology import ROOT
 
-# One named graph holds both the ontology (classes, properties, subClassOf, domain, range) and
-# the instance data. ArangoRDF links every instance to its class with a `type` edge, and an
-# edge collection can only have one definition, so the two can't be separate graphs.
-GRAPH = "AWSAccessGraph"
+# Three named graphs over one database, as in Arango's Risk Intelligence demo:
+# the ontology (classes, properties, subClassOf, domain, range), the instance data, and a
+# knowledge graph that combines the two and links every instance to its class with a
+# `dataType` edge. A collection used by more than one graph has the same edge definition in each.
+ONTOLOGY_GRAPH = "OntologyGraph"
+DATA_GRAPH = "DataGraph"
+KNOWLEDGE_GRAPH = "KnowledgeGraph"
 
 
 def _load_dotenv() -> None:
@@ -62,12 +65,10 @@ def connect(create: bool = False, settings: Settings | None = None) -> StandardD
 
 
 def reset(db: StandardDatabase) -> list[str]:
-    """Drop the graph and every collection in the project database."""
+    """Drop every graph and every collection in the project database."""
     if db.name == "_system":
         raise RuntimeError("refusing to reset the _system database")
-    if db.has_graph(GRAPH):
-        db.delete_graph(GRAPH)
-    for g in db.graphs():           # graphs left by older versions of this repo
+    for g in db.graphs():           # including AWSAccessGraph, left by older versions of this repo
         db.delete_graph(g["name"])
     dropped = []
     for col in db.collections():

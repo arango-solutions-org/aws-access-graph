@@ -19,13 +19,13 @@ generate:           ## ontology-driven synthetic data -> build/data.ttl
 validate:           ## SHACL-validate the data against the ontology's shapes
 	$(PY) -m awsgraph validate
 
-schema:             ## collections, indexes and named graph from the ontology; load the ontology itself
+schema:             ## collections, indexes and the three named graphs; load the ontology itself
 	$(PY) -m awsgraph schema
 
-load:               ## load build/data.ttl with ArangoRDF (PGT)
+load:               ## load build/data.ttl with ArangoRDF (PGT); link instances to classes
 	$(PY) -m awsgraph load
 
-derive:             ## evaluate policies in AQL -> canRead / canWrite / canManagePermissions, isAdministrator
+derive:             ## evaluate policies in AQL -> hasEffectiveAccess, canList ... canTag, isAdministrator
 	$(PY) -m awsgraph derive
 
 queries:            ## run every query in aql/queries
@@ -40,7 +40,7 @@ e2e:                ## end-to-end test against the database in .env
 expected:           ## re-record tests/expected from a live run and re-render docs/RESULTS.md
 	UPDATE_EXPECTED=1 $(PY) -m pytest -m e2e && $(PY) tools/render_results.py
 
-reset:              ## drop the graph and every collection in the project database
+reset:              ## drop every graph and collection in the project database
 	$(PY) -m awsgraph reset
 
 catalog:            ## rebuild data/action_access_levels.csv

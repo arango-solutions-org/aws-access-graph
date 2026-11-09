@@ -6,8 +6,8 @@ from awsgraph.ontology import ROOT, DataBuilder, OntologyError
 from awsgraph.schema import edge_definitions
 
 VENDORED = {
-    "aws.ttl": "9e253726d0604b950ea9f5066b060c326c5dd6cbc30f8954d8d123ef23529b12",
-    "aws.shapes.ttl": "aa8519d77176326e491aacd350f00fb8534e7016dba2b4f99ec10946c27ddb6c",
+    "aws.ttl": "9a9bda99f43494e37353f5b25941a2ae9c9ade2c84ecfc29b32dfffc5ab61cc7",
+    "aws.shapes.ttl": "7611598f04f75fd9c465e5da91d58a5de9e0da0e754831e1fa90353e04473e1a",
 }
 
 
@@ -32,8 +32,11 @@ def test_edge_definitions_follow_domain_and_range(ontology):
     assert defs["hasInstanceProfile"].to_vertex_collections == ["IAMInstanceProfile"]
     assert defs["canAssumeRole"].from_vertex_collections == ["IAMRole", "IAMUser"]
     assert defs["memberOf"].to_vertex_collections == ["IAMGroup"]
+    # canRead declares no domain or range of its own; it inherits them from hasEffectiveAccess
     assert "Tag" not in defs["canRead"].to_vertex_collections
-    assert set(defs["hasExecutionRole"].from_vertex_collections) == {"EC2Instance", "LambdaFunction"}
+    assert "IAMRole" in defs["canRead"].from_vertex_collections
+    assert "Tag" not in defs["hasExecutionRole"].from_vertex_collections
+    assert defs["hasExecutionRole"].to_vertex_collections == ["IAMRole"]
 
 
 def test_builder_rejects_statements_outside_domain_or_range(ontology):

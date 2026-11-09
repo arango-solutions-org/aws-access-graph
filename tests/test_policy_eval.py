@@ -2,7 +2,8 @@
 
 
 def edges(derived, who):
-    return {(e, to) for (e, frm, to) in derived.edges if frm == who}
+    """The access-level edges from one identity (the hasEffectiveAccess pairing left out)."""
+    return {(e, to) for (e, frm, to) in derived.edges if frm == who and e != "hasEffectiveAccess"}
 
 
 def test_administrators(derived):
@@ -10,7 +11,7 @@ def test_administrators(derived):
 
 
 def test_direct_grants(derived):
-    assert edges(derived, "web-role") == {("canRead", "static-assets")}
+    assert edges(derived, "web-role") == {("canList", "static-assets"), ("canRead", "static-assets")}
     assert edges(derived, "app-role") == {("canRead", "customer-data"), ("canWrite", "financial-exports"),
                                           ("canWrite", "app-data-key")}
     assert edges(derived, "webhook-role") == {("canWrite", "customer-data")}
@@ -21,8 +22,8 @@ def test_permission_rewrite(derived):
 
 
 def test_boundary_caps_permissions(derived):
-    # contractor-user's policy allows s3:* on *, but its boundary allows only reading static-assets
-    assert edges(derived, "contractor-user") == {("canRead", "static-assets")}
+    # contractor-user's policy allows s3:* on *, but its boundary allows only listing and reading static-assets
+    assert edges(derived, "contractor-user") == {("canList", "static-assets"), ("canRead", "static-assets")}
 
 
 def test_explicit_deny_wins(derived):
@@ -40,3 +41,13 @@ def test_same_account_only(derived):
 def test_group_policies_reach_members(derived):
     prov = derived.edges[("canRead", "app-team-prod-user-1", "app-team-prod-logs")]
     assert prov["via"] == {"app-team-prod-developers"}
+
+
+def test_every_access_level_is_paired_with_has_effective_access(derived):
+    # REQ-045: data asserts hasEffectiveAccess alongside each specific level
+    levels = {(frm, to): set() for (e, frm, to) in derived.edges if e != "hasEffectiveAccess"}
+    for (e, frm, to) in derived.edges:
+        if e != "hasEffectiveAccess":
+            levels[(frm, to)].add(e)
+    parents = {(frm, to): prov["levels"] for (e, frm, to), prov in derived.edges.items() if e == "hasEffectiveAccess"}
+    assert parents == levels

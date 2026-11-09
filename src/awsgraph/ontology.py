@@ -95,10 +95,22 @@ class Ontology:
         return None
 
     def domain(self, prop: str) -> URIRef | None:
-        return self.graph.value(self.term(prop), RDFS.domain)
+        return self._inherited(prop, RDFS.domain)
 
     def range(self, prop: str) -> URIRef | None:
-        return self.graph.value(self.term(prop), RDFS.range)
+        return self._inherited(prop, RDFS.range)
+
+    def _inherited(self, prop: str | None, predicate: URIRef) -> URIRef | None:
+        """The property's own domain or range, else the nearest one up rdfs:subPropertyOf
+        (canRead, for example, takes its domain and range from hasEffectiveAccess)."""
+        seen = set()
+        while prop is not None and prop not in seen:
+            seen.add(prop)
+            value = self.graph.value(self.term(prop), predicate)
+            if value is not None:
+                return value
+            prop = self.super_property(prop)
+        return None
 
     def superclasses(self, name: str) -> set[str]:
         """The class itself and all its named superclasses."""
