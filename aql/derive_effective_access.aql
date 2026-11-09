@@ -1,22 +1,26 @@
 // derive_effective_access.aql
 //
-// Works out which users and roles can read, write or manage the permissions of each data
-// store, KMS key and role, by evaluating their IAM policies, and writes the result as
-// canRead, canWrite and canManagePermissions edges. Each edge records the actions and
-// policies that produced it.
+// Works out which users and roles can list, read, write, tag or manage the permissions of each
+// data store, KMS key and role, by evaluating their IAM policies. It writes one edge per access
+// level (canList, canRead, canWrite, canTag, canManagePermissions) and, for every pair with any
+// of them, a hasEffectiveAccess edge, the parent property, so a query that doesn't apply RDFS
+// reasoning still finds the access (REQ-045 in the ontology). Each edge records the actions
+// and policies that produced it.
 //
 // The rules are in docs/04-derive.md. In short: identity policies (own and group), wildcard
 // matching on actions and resources, explicit Deny wins, a permission boundary must also
 // allow, same account only, and AWS's access level decides the edge. Resource policies,
 // conditions and SCPs aren't evaluated.
 //
-// Run after clearing the three edge collections (python -m awsgraph derive does both).
+// Run after clearing the derived edge collections (python -m awsgraph derive does both).
 // No bind parameters.
 
-// Every action with an access level that produces an edge, from the Service Authorization Reference.
+// Every action with its access level, from the Service Authorization Reference.
+LET levelEdge = { "List": "canList", "Read": "canRead", "Write": "canWrite",
+                  "Permissions management": "canManagePermissions", "Tagging": "canTag" }
 LET actions = (
   FOR a IN Action
-    FILTER a.accessLevel IN ["Read", "Write", "Permissions management"]
+    FILTER HAS(levelEdge, a.accessLevel)
     RETURN { name: a.label, service: FIRST(SPLIT(a.label, ":")), level: a.accessLevel }
 )
 
@@ -96,6 +100,12 @@ LET derived = (
                    viaGroups: SORTED(via[* FILTER CURRENT != null]) }
 )
 
+// One edge per access level. AQL can't choose the collection per row, so one INSERT each.
+LET lists = (
+  FOR d IN derived FILTER d.level == "List"
+    INSERT { _from: d.from, _to: d.to, actions: d.actions, policies: d.policies, viaGroups: d.viaGroups,
+             derivedBy: "derive_effective_access.aql" } INTO canList
+    RETURN 1)
 LET reads = (
   FOR d IN derived FILTER d.level == "Read"
     INSERT { _from: d.from, _to: d.to, actions: d.actions, policies: d.policies, viaGroups: d.viaGroups,
@@ -111,5 +121,21 @@ LET permissions = (
     INSERT { _from: d.from, _to: d.to, actions: d.actions, policies: d.policies, viaGroups: d.viaGroups,
              derivedBy: "derive_effective_access.aql" } INTO canManagePermissions
     RETURN 1)
+LET tags = (
+  FOR d IN derived FILTER d.level == "Tagging"
+    INSERT { _from: d.from, _to: d.to, actions: d.actions, policies: d.policies, viaGroups: d.viaGroups,
+             derivedBy: "derive_effective_access.aql" } INTO canTag
+    RETURN 1)
 
-RETURN { canRead: LENGTH(reads), canWrite: LENGTH(writes), canManagePermissions: LENGTH(permissions) }
+// The parent edge, once per principal and resource, listing the level edges it stands for.
+LET effective = (
+  FOR d IN derived
+    COLLECT from = d.from, to = d.to INTO g
+    INSERT { _from: from, _to: to, levels: SORTED(FOR x IN g RETURN levelEdge[x.d.level]),
+             actions: SORTED_UNIQUE(FLATTEN(g[*].d.actions)), policies: SORTED_UNIQUE(FLATTEN(g[*].d.policies)),
+             viaGroups: SORTED_UNIQUE(FLATTEN(g[*].d.viaGroups)), derivedBy: "derive_effective_access.aql" }
+      INTO hasEffectiveAccess
+    RETURN 1)
+
+RETURN { hasEffectiveAccess: LENGTH(effective), canList: LENGTH(lists), canRead: LENGTH(reads),
+         canWrite: LENGTH(writes), canManagePermissions: LENGTH(permissions), canTag: LENGTH(tags) }

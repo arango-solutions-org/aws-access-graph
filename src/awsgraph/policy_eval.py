@@ -18,9 +18,12 @@ The rules (deliberately simple; this is not a complete IAM evaluator):
    environment, and S3 ARNs carry no account ID, so the account is compared through the
    ``environment`` attribute.
 5. An explicit ``Deny`` beats any ``Allow``. A permission boundary, if set, must also allow.
-6. Each allowed action has AWS's access level. Read gives ``canRead``, Write gives
-   ``canWrite`` and Permissions management gives ``canManagePermissions``. List and Tagging
-   are left out.
+6. Each allowed action has AWS's access level, and each level has its own edge: List gives
+   ``canList``, Read ``canRead``, Write ``canWrite``, Permissions management
+   ``canManagePermissions`` and Tagging ``canTag``. Every pair with any of these also gets a
+   ``hasEffectiveAccess`` edge, the parent property, recording which levels it holds. The
+   ontology requires the pairing (REQ-045), so a query that doesn't apply RDFS reasoning still
+   finds the access.
 7. ``isAdministrator`` is true when ``*`` on ``*`` is allowed and not denied.
 
 Not evaluated: resource-based policies, conditions, SCPs, session policies, and role
@@ -35,7 +38,9 @@ from dataclasses import dataclass, field
 
 from rdflib import RDF, RDFS, Graph, Namespace, URIRef
 
-LEVEL_EDGE = {"Read": "canRead", "Write": "canWrite", "Permissions management": "canManagePermissions"}
+LEVEL_EDGE = {"List": "canList", "Read": "canRead", "Write": "canWrite",
+              "Permissions management": "canManagePermissions", "Tagging": "canTag"}
+PARENT_EDGE = "hasEffectiveAccess"
 TARGET_CLASSES = ["S3Bucket", "DynamoDBTable", "RDSInstance", "SecretsManagerSecret", "KMSKey", "IAMRole"]
 
 
@@ -143,4 +148,11 @@ def derive(g: Graph, ns: Namespace) -> Result:
                                               for st in boundary if st.effect == "Allow")
         if star and not star_denied and boundary_ok:
             result.admins.add(label(ent))
+
+    for (edge, frm, to), prov in list(result.edges.items()):
+        parent = result.edges.setdefault((PARENT_EDGE, frm, to),
+                                         {"actions": set(), "policies": set(), "via": set(), "levels": set()})
+        parent["levels"].add(edge)
+        for k in ("actions", "policies", "via"):
+            parent[k] |= prov[k]
     return result

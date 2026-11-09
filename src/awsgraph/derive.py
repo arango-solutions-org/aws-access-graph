@@ -14,7 +14,7 @@ from arango.database import StandardDatabase
 from .ontology import ROOT
 
 AQL = ROOT / "aql"
-DERIVED_EDGES = ["canRead", "canWrite", "canManagePermissions"]
+DERIVED_EDGES = ["hasEffectiveAccess", "canList", "canRead", "canWrite", "canManagePermissions", "canTag"]
 
 
 def derive(db: StandardDatabase) -> dict:

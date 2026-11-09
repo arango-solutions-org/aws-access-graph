@@ -6,30 +6,6 @@
     "parent": null
   },
   {
-    "property": "canManagePermissions",
-    "domain": "IAMIdentity",
-    "range": "AWSResource",
-    "parent": "hasEffectiveAccess"
-  },
-  {
-    "property": "canRead",
-    "domain": "IAMIdentity",
-    "range": "AWSResource",
-    "parent": "hasEffectiveAccess"
-  },
-  {
-    "property": "canWrite",
-    "domain": "IAMIdentity",
-    "range": "AWSResource",
-    "parent": "hasEffectiveAccess"
-  },
-  {
-    "property": "hasEffectiveAccess",
-    "domain": "IAMIdentity",
-    "range": "AWSResource",
-    "parent": null
-  },
-  {
     "property": "hasPermissionBoundary",
     "domain": "IAMEntity",
     "range": "IAMPermissionBoundary",

@@ -57,9 +57,12 @@ datatype_properties:
 
 # Written by the derivation step (aql/derive_effective_access.aql), never by the generator.
 derived_properties:
+  - hasEffectiveAccess            # one per principal and resource with any access level below
+  - canList
   - canRead
   - canWrite
   - canManagePermissions
+  - canTag
   - isAdministrator
 
 # Tag keys the blueprint relies on.

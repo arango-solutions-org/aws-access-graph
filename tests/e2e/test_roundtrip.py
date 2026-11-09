@@ -13,11 +13,11 @@ import pytest
 
 from awsgraph import queries as q
 from awsgraph.db import connect, reset
-from awsgraph.derive import derive
+from awsgraph.derive import DERIVED_EDGES, derive
 from awsgraph.generate import write
 from awsgraph.load import load
 from awsgraph.policy_eval import derive as derive_in_python
-from awsgraph.schema import create, load_ontology
+from awsgraph.schema import create, create_knowledge_graph, load_ontology
 
 pytestmark = pytest.mark.e2e
 EXPECTED = Path(__file__).resolve().parents[1] / "expected"
@@ -30,6 +30,7 @@ def db():
     path, graph = write()
     create(database)
     load_ontology(database)
+    create_knowledge_graph(database)
     load(database, path)
     stats = derive(database)
     database.stats_ = stats
@@ -41,11 +42,15 @@ def test_derived_edges_match_reference_rules(db):
     from awsgraph.ontology import Profile
     expected = derive_in_python(db.graph_, Profile.load().ns)
     actual = set()
-    for edge in ("canRead", "canWrite", "canManagePermissions"):
+    for edge in DERIVED_EDGES:
         for row in db.aql.execute(
                 f"FOR e IN {edge} RETURN [DOCUMENT(e._from).label, DOCUMENT(e._to).label]"):
             actual.add((edge, row[0], row[1]))
     assert actual == set(expected.edges)
+    levels = {(row[0], row[1]): set(row[2]) for row in db.aql.execute(
+        "FOR e IN hasEffectiveAccess RETURN [DOCUMENT(e._from).label, DOCUMENT(e._to).label, e.levels]")}
+    assert levels == {(frm, to): prov["levels"] for (e, frm, to), prov in expected.edges.items()
+                      if e == "hasEffectiveAccess"}
     admins = set(db.aql.execute(
         "FOR x IN UNION((FOR u IN IAMUser RETURN u), (FOR r IN IAMRole RETURN r)) "
         "FILTER x.isAdministrator == true RETURN x.label"))

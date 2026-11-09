@@ -31,5 +31,5 @@ def test_scenarios_present(estate):
 
 def test_no_derived_facts_in_generated_data(estate):
     ns = estate.b.ns
-    for prop in ["canRead", "canWrite", "canManagePermissions", "isAdministrator"]:
+    for prop in estate.b.ont.profile.derived_properties:
         assert not list(estate.b.graph.triples((None, ns[prop], None)))

@@ -124,15 +124,11 @@ a live ArangoDB in CI. Don't edit this page by hand: run `python tools/render_re
 <a id="q9"></a>
 ## Q9. What does the ontology say an IAM role can have? (the ontology as a queryable schema)
 
-[`q09_ontology_relationships_for_a_class.aql`](../aql/queries/q09_ontology_relationships_for_a_class.aql) · bind: `{"fromClass": "IAMRole", "generic": ["IdentityResource", "AWSResource", "Entity"]}` · 10 rows
+[`q09_ontology_relationships_for_a_class.aql`](../aql/queries/q09_ontology_relationships_for_a_class.aql) · bind: `{"fromClass": "IAMRole", "generic": ["IdentityResource", "AWSResource", "Entity"]}` · 6 rows
 
 | property | domain | range | parent |
 |---|---|---|---|
 | canAssumeRole | IAMEntity | IAMRole |  |
-| canManagePermissions | IAMIdentity | AWSResource | hasEffectiveAccess |
-| canRead | IAMIdentity | AWSResource | hasEffectiveAccess |
-| canWrite | IAMIdentity | AWSResource | hasEffectiveAccess |
-| hasEffectiveAccess | IAMIdentity | AWSResource |  |
 | hasPermissionBoundary | IAMEntity | IAMPermissionBoundary |  |
 | hasPolicyAttachment | IAMIdentity | IAMPolicy |  |
 | hasTrustRelationship | IAMRole | IAMTrustPolicy |  |
