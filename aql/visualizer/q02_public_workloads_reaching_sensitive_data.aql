@@ -1,0 +1,18 @@
+// Q2  Which internet-facing workloads can reach sensitive data, through any chain of roles?
+// graph: DataGraph
+// bind: { "maxDepth": 6, "sensitive": ["confidential", "restricted"], "throughAdminRoles": false }
+// Draws the shortest route from each public workload to each sensitive store it can reach.
+WITH IAMInstanceProfile, IAMRole, S3Bucket, DynamoDBTable, RDSInstance, SecretsManagerSecret, KMSKey
+FOR w IN UNION(
+    (FOR x IN EC2Instance    FILTER x.isPubliclyAccessible == true RETURN x),
+    (FOR x IN LambdaFunction FILTER x.isPubliclyAccessible == true RETURN x))
+  FOR v, e, p IN 1..@maxDepth OUTBOUND w
+      hasInstanceProfile, hasRole, hasExecutionRole, canAssumeRole, canRead, canWrite, canManagePermissions
+    PRUNE e != null AND (PARSE_COLLECTION(e) IN ["canRead", "canWrite", "canManagePermissions"]
+                         OR (v.isAdministrator == true AND NOT @throughAdminRoles))
+    OPTIONS { uniqueVertices: "path", order: "bfs" }
+    FILTER PARSE_COLLECTION(e) IN ["canRead", "canWrite", "canManagePermissions"]
+    FILTER v.dataClassification IN @sensitive
+    FILTER @throughAdminRoles OR p.vertices[* FILTER CURRENT.isAdministrator == true] == []
+    COLLECT workload = w._id, store = v._id INTO routes = p
+    RETURN FIRST(FOR r IN routes SORT LENGTH(r.edges) RETURN r)

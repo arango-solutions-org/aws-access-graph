@@ -1,0 +1,17 @@
+// Q9  What does the ontology say an IAM role can have? (the ontology as a queryable schema)
+// graph: OntologyGraph
+// bind: { "fromClass": "IAMRole", "generic": ["IdentityResource", "AWSResource", "Entity"] }
+// Draws the class's superclasses and, for each, the properties defined on it and their ranges.
+WITH Class, Property, ObjectProperty
+LET start = FIRST(FOR c IN Class FILTER c._label == @fromClass RETURN c)
+LET up = (
+  FOR d, e, p IN 1..10 OUTBOUND start subClassOf
+    OPTIONS { uniqueVertices: "global", order: "bfs" }
+    FILTER d._rdftype == "URIRef"
+    RETURN p)
+FOR d IN UNION([start], up[*].vertices[-1])
+  FILTER d._label NOT IN @generic
+  FOR prop, de, dp IN 1..1 INBOUND d domain
+    FOR path IN UNION([dp], (FOR r, re, rp IN 1..1 OUTBOUND prop range RETURN rp),
+                      up[* FILTER CURRENT.vertices[-1]._id == d._id])
+      RETURN path

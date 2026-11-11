@@ -1,0 +1,13 @@
+// Q7  Which development identities can reach production roles, and through which trust link?
+// graph: DataGraph
+// bind: { "sourceEnv": "dev", "targetEnv": "prod", "maxDepth": 6 }
+// Draws each development identity's shortest route to each production role it can reach.
+WITH IAMRole
+FOR principal IN UNION(
+    (FOR u IN IAMUser FILTER u.environment == @sourceEnv RETURN u),
+    (FOR r IN IAMRole FILTER r.environment == @sourceEnv RETURN r))
+  FOR v, e, p IN 1..@maxDepth OUTBOUND principal canAssumeRole
+    OPTIONS { uniqueVertices: "path", order: "bfs" }
+    FILTER v.environment == @targetEnv
+    COLLECT from = principal._id, to = v._id INTO routes = p
+    RETURN FIRST(FOR r IN routes SORT LENGTH(r.edges) RETURN r)

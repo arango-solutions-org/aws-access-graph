@@ -1,0 +1,16 @@
+// Q3  What can this user or role reach, including every role it can assume? (blast radius)
+// graph: DataGraph
+// bind: { "principalArn": "arn:aws:iam::111122223333:user/dev-user", "maxDepth": 6,
+//         "classifications": ["confidential", "restricted"] }
+// Draws the shortest route from the principal to each resource it can reach.
+WITH IAMRole, IAMUser, S3Bucket, DynamoDBTable, RDSInstance, SecretsManagerSecret, KMSKey
+LET start = FIRST(UNION(
+    (FOR u IN IAMUser FILTER u.arn == @principalArn RETURN u),
+    (FOR r IN IAMRole FILTER r.arn == @principalArn RETURN r)))
+FOR v, e, p IN 1..@maxDepth OUTBOUND start canAssumeRole, canRead, canWrite, canManagePermissions
+  PRUNE e != null AND NOT IS_SAME_COLLECTION("canAssumeRole", e)
+  OPTIONS { uniqueVertices: "path", order: "bfs" }
+  FILTER NOT IS_SAME_COLLECTION("canAssumeRole", e)
+  FILTER @classifications == null OR v.dataClassification IN @classifications
+  COLLECT resource = v._id INTO routes = p
+  RETURN FIRST(FOR r IN routes SORT LENGTH(r.edges) RETURN r)

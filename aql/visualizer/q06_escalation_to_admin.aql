@@ -1,0 +1,16 @@
+// Q6  Which users can escalate to administrator, by assuming an admin role or by changing a role's permissions?
+// graph: DataGraph
+// bind: { "maxDepth": 6 }
+// Draws the shortest escalation route for each user and target role.
+WITH IAMRole, IAMUser, S3Bucket, DynamoDBTable, RDSInstance, SecretsManagerSecret, KMSKey, Tag
+FOR u IN IAMUser
+  FILTER u.isAdministrator != true
+  FILTER LENGTH(FOR t IN 1..1 OUTBOUND u hasTag
+                  FILTER t.tagKey == "breakglass" AND t.tagValue == "approved" RETURN 1) == 0
+  FOR v, e, p IN 1..@maxDepth OUTBOUND u canAssumeRole, canManagePermissions
+    PRUNE e != null AND (IS_SAME_COLLECTION("canManagePermissions", e) OR v.isAdministrator == true)
+    OPTIONS { uniqueVertices: "path", order: "bfs" }
+    FILTER (IS_SAME_COLLECTION("canAssumeRole", e) AND v.isAdministrator == true)
+        OR (IS_SAME_COLLECTION("canManagePermissions", e) AND IS_SAME_COLLECTION("IAMRole", v))
+    COLLECT user = u._id, target = v._id INTO routes = p
+    RETURN FIRST(FOR r IN routes SORT LENGTH(r.edges) RETURN r)

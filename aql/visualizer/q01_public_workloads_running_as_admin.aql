@@ -1,0 +1,11 @@
+// Q1  Which internet-facing workloads run with an administrator role?
+// graph: DataGraph
+// bind: {}
+// Draws each public workload's route to its administrator role.
+WITH IAMInstanceProfile, IAMRole
+FOR w IN UNION(
+    (FOR x IN EC2Instance    FILTER x.isPubliclyAccessible == true RETURN x),
+    (FOR x IN LambdaFunction FILTER x.isPubliclyAccessible == true RETURN x))
+  FOR role, e, p IN 1..2 OUTBOUND w hasInstanceProfile, hasRole, hasExecutionRole
+    FILTER IS_SAME_COLLECTION("IAMRole", role) AND role.isAdministrator == true
+    RETURN p

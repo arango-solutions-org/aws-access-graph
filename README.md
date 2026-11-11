@@ -15,23 +15,49 @@ Each step is a small, readable module and a `make` target, so you can follow it 
 | [4. Load](docs/03-schema.md#loading-with-arangordf) | Load the data with [ArangoRDF](https://github.com/ArangoDB-Community/ArangoRDF) and link each instance to its class | `load.py` | `make load` |
 | [5. Derive](docs/04-derive.md) | Evaluate IAM policies in AQL and write `hasEffectiveAccess`, one edge per access level (`canList`, `canRead`, `canWrite`, `canManagePermissions`, `canTag`) and `isAdministrator` | `aql/derive_*.aql` | `make derive` |
 | [6. Query](docs/05-queries.md) | Eight security questions and two ontology questions in AQL, plus SPARQL and Cypher examples | `aql/queries/`, `examples/` | `make queries` |
+| [7. Web UI](docs/05-queries.md#in-the-arango-web-ui) | Save the queries in the database for the query editor, and a graph version of each for the Graph Visualizer | `aql/visualizer/`, `ui.py` | `make ui` |
 
 ## Quick start
+
+The demo runs on the local install of the Arango Contextual Data Platform. Install it first from
+[arango.ai/arango-developer-edition](https://arango.ai/arango-developer-edition/). It runs a
+small Kubernetes cluster on your machine, using kind (Kubernetes in Docker), so Docker needs to
+be running with at least 8 GB of memory. The installer sets up kind, helm and kubectl if you
+don't have them. `make forward` uses kubectl to reach the database inside the cluster.
+
+```bash
+make forward                # in a second terminal, and leave it running: https://127.0.0.1:8529
+```
 
 ```bash
 git clone https://github.com/arango-solutions-org/aws-access-graph.git
 cd aws-access-graph
 python -m venv .venv && source .venv/bin/activate
 make install
-cp .env.example .env        # point at your ArangoDB, or:
-make db                     # start ArangoDB 3.12 locally with docker compose
+cp .env.example .env        # already set up for the local install (root / test)
 make all
 ```
+
+Then open [https://127.0.0.1:8529/ui/](https://127.0.0.1:8529/ui/). The ten questions are in the
+query editor's saved queries, and their graph versions are in the Graph Visualizer's Queries
+panel for `DataGraph`, `OntologyGraph` and `KnowledgeGraph` (see
+[step 7](docs/05-queries.md#in-the-arango-web-ui)).
 
 `make test` runs the unit tests (no database needed). `make e2e` runs the whole pipeline
 against the database in `.env` and checks every query result against
 [docs/RESULTS.md](docs/RESULTS.md). If you change the data or a query on purpose, `make expected`
 re-records the results and re-renders that page.
+
+If something fails to connect, the error says which of these it is:
+
+- **Nothing is answering**: the port-forward has stopped. Run `make forward` again.
+- **Certificate check failed**: `.env` is missing `ARANGO_VERIFY_SSL=false`. The local
+  install's certificate is self-signed for its in-cluster names, not for 127.0.0.1.
+- **User was refused**: `ARANGO_PASSWORD` doesn't match. The installer sets `root` / `test`;
+  use your own if you've changed it.
+
+To use another deployment instead, such as a managed one, change the settings in `.env`;
+`.env.example` shows how.
 
 ## The questions
 

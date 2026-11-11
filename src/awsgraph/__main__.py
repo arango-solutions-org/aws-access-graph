@@ -1,6 +1,6 @@
 """Command line: python -m awsgraph <step>.
 
-Steps, in order: generate, validate, schema, load, derive, queries. ``all`` runs every step.
+Steps, in order: generate, validate, schema, load, derive, queries, ui. ``all`` runs every step.
 """
 
 from __future__ import annotations
@@ -13,12 +13,13 @@ import time
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="awsgraph", description=__doc__)
-    parser.add_argument("step", choices=["generate", "validate", "schema", "load", "derive", "queries", "all", "reset"])
+    parser.add_argument("step", choices=["generate", "validate", "schema", "load", "derive", "queries", "ui",
+                                         "all", "reset"])
     parser.add_argument("query", nargs="?", help="with 'queries': run only this one, e.g. q05")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args(argv)
 
-    steps = ["generate", "validate", "schema", "load", "derive", "queries"] if args.step == "all" else [args.step]
+    steps = ["generate", "validate", "schema", "load", "derive", "queries", "ui"] if args.step == "all" else [args.step]
     db = None
     for step in steps:
         t = time.time()
@@ -64,6 +65,9 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"\n-- {q.title}  ({len(rows)} rows)")
                     for row in rows:
                         print(json.dumps(row))
+            elif step == "ui":
+                from .ui import install
+                print(install(db))
         print(f"   {time.time() - t:.1f}s", flush=True)
     return 0
 

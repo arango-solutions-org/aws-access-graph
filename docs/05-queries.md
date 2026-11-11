@@ -52,9 +52,34 @@ on every route:  dev-user -> dev-deployer-role
 Removing the trust from `dev-deployer-role` to `prod-deployer-role` closes both routes. It's the
 same link Q7 reports as the bridge between environments.
 
+## In the Arango web UI
+
+```bash
+make ui
+```
+
+This saves the queries in the database, so they can be run, and their routes drawn, from the
+web UI (on the local install, [https://127.0.0.1:8529/ui/](https://127.0.0.1:8529/ui/)):
+
+- **Query editor, saved queries.** The ten questions above, with their default bind
+  parameters. They return tables, the same as `make queries`.
+- **Graph Visualizer, Queries panel.** A graph version of each question, from
+  [`aql/visualizer`](../aql/visualizer), which returns the routes behind the answer as paths
+  so the visualizer can draw them. Q1 to Q8 are on `DataGraph`, Q9 on `OntologyGraph` and Q10
+  on `KnowledgeGraph`. Open the graph, then pick the query from the Queries panel. Where a
+  question has several routes to the same answer, the graph version draws the shortest one,
+  except Q5, which draws every route.
+
+Each graph version has the same header and bind parameters as its question (Q10 adds
+`instancesPerClass`), plus a `// graph:` line naming its graph. The end-to-end test checks that each returns paths whose
+edges are all in that graph.
+
+The saved documents all have keys starting `awsgraph_`. Running `make ui` again replaces them,
+and leaves alone any queries saved by hand in the UI. `make all` runs it as the last step.
+
 ## SPARQL and Cypher
 
 - **[`examples/sparql`](../examples/sparql)** runs SPARQL over the ontology and the generated Turtle with rdflib.
-  `01` asks the same question as Q9 and returns the same ten properties; `tests/test_sparql.py` checks that they agree.
+  `01` asks the same question as Q9 and returns the same six properties; `tests/test_sparql.py` checks that they agree.
 - **[`examples/cypher`](../examples/cypher)** shows Q1 and Q5 in Cypher next to the AQL. The
   collection names become labels and relationship types, so the patterns map one to one.

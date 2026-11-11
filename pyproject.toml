@@ -28,6 +28,9 @@ packages = ["src/awsgraph"]
 testpaths = ["tests"]
 markers = ["e2e: needs a running ArangoDB (set ARANGO_URL etc. or .env)"]
 addopts = "-m 'not e2e'"
+# The local install's certificate is self-signed, so .env turns checks off; db.connect() silences
+# the warning once, but pytest resets warning filters for every test.
+filterwarnings = ["ignore::urllib3.exceptions.InsecureRequestWarning"]
 
 [tool.ruff]
 line-length = 120
