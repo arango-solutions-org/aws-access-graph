@@ -23,11 +23,7 @@ The demo runs on the local install of the Arango Contextual Data Platform. Insta
 [arango.ai/arango-developer-edition](https://arango.ai/arango-developer-edition/). It runs a
 small Kubernetes cluster on your machine, using kind (Kubernetes in Docker), so Docker needs to
 be running with at least 8 GB of memory. The installer sets up kind, helm and kubectl if you
-don't have them. `make forward` uses kubectl to reach the database inside the cluster.
-
-```bash
-make forward                # in a second terminal, and leave it running: https://127.0.0.1:8529
-```
+don't have them. 
 
 ```bash
 git clone https://github.com/arango-solutions-org/aws-access-graph.git
