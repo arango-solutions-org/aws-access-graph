@@ -1,0 +1,11 @@
+// Q5  Why can this user reach this data store? Every route, and the links they all share
+// graph: DataGraph
+// bind: { "userArn": "arn:aws:iam::111122223333:user/dev-user",
+//         "storeArn": "arn:aws:s3:::financial-exports", "maxDepth": 6 }
+// Draws every route. The links all routes share are the smallest fix.
+WITH IAMRole, IAMUser, S3Bucket, DynamoDBTable, RDSInstance, SecretsManagerSecret, KMSKey
+LET user = FIRST(FOR u IN IAMUser FILTER u.arn == @userArn RETURN u)
+LET store = FIRST(FOR s IN S3Bucket FILTER s.arn == @storeArn RETURN s)
+FOR p IN 1..@maxDepth OUTBOUND K_PATHS user TO store canAssumeRole, canRead, canWrite, canManagePermissions
+  FILTER LENGTH(p.edges[* FILTER NOT IS_SAME_COLLECTION("canAssumeRole", CURRENT)]) == 1
+  RETURN p

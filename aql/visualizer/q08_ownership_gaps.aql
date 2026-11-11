@@ -1,0 +1,20 @@
+// Q8  Which sensitive buckets have no accountable team, or can be changed by another team?
+// graph: DataGraph
+// bind: { "sensitive": ["confidential", "restricted"],
+//         "activeTeams": ["app-team", "web-team", "platform-team", "security-team", "integration-team", "data-team"] }
+// Draws each flagged bucket with its team tag, and each writer from another team with theirs.
+WITH Tag, IAMRole, IAMUser
+FOR b IN S3Bucket
+  FILTER b.dataClassification IN @sensitive
+  LET teamTag = FIRST(FOR t, e, p IN 1..1 OUTBOUND b hasTag FILTER t.tagKey == "team" RETURN p)
+  LET team = LAST(teamTag.vertices).tagValue
+  LET outside = (
+    FOR holder, e, p IN 1..1 INBOUND b canWrite, canManagePermissions
+      FILTER holder.isAdministrator != true
+      LET holderTag = FIRST(FOR t, te, tp IN 1..1 OUTBOUND holder hasTag FILTER t.tagKey == "team" RETURN tp)
+      FILTER team == null OR LAST(holderTag.vertices).tagValue != team
+      RETURN [p, holderTag])
+  FILTER team == null OR team NOT IN @activeTeams OR LENGTH(outside) > 0
+  FOR path IN UNION([teamTag], FLATTEN(outside))
+    FILTER path != null
+    RETURN path

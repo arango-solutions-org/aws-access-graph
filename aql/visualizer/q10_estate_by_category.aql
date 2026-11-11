@@ -1,0 +1,15 @@
+// Q10  How much of each kind of resource is in the estate? (instances rolled up the class hierarchy)
+// graph: KnowledgeGraph
+// bind: { "categories": ["ComputeResource", "StorageResource", "DatabaseResource", "SecurityResource", "IdentityResource"],
+//         "instancesPerClass": 3 }
+// Draws each category's class hierarchy down to the classes that have instances, with a few
+// instances of each linked to their class by dataType.
+WITH Class
+FOR cat IN Class
+  FILTER cat._label IN @categories
+  FOR c, e, p IN 1..10 INBOUND cat subClassOf
+    OPTIONS { uniqueVertices: "global", order: "bfs" }
+    LET instances = (FOR i, te, tp IN 1..1 INBOUND c dataType LIMIT @instancesPerClass RETURN tp)
+    FILTER LENGTH(instances) > 0
+    FOR path IN UNION([p], instances)
+      RETURN path

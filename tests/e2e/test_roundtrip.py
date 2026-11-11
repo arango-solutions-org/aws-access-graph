@@ -67,3 +67,30 @@ def test_query_results(db, query):
     if not path.exists():
         pytest.fail(f"no expected results for {query.id}: run with UPDATE_EXPECTED=1 and review the diff")
     assert rows == json.loads(path.read_text())
+
+
+@pytest.mark.parametrize("query", q.visualizer_queries(), ids=lambda x: x.id)
+def test_visualizer_query_returns_paths_in_its_graph(db, query):
+    rows = q.run(db, query)
+    assert rows, "the Graph Visualizer would draw nothing"
+    edges = {d["edge_collection"] for d in db.graph(query.graph).edge_definitions()}
+    for p in rows:
+        assert p["edges"], "a path with no edges"
+        assert {e["_id"].split("/")[0] for e in p["edges"]} <= edges, f"edges outside {query.graph}"
+
+
+def test_ui_install_is_idempotent(db):
+    from awsgraph.ui import PREFIX, install
+
+    def ours():
+        return {name: sorted(d["_key"] for d in db.collection(name).all() if d["_key"].startswith(PREFIX))
+                for name in ("_editor_saved_queries", "_queries")}
+
+    assert install(db) == {"editor": 10, "visualizer": 10}
+    first = ours()
+    install(db)
+    assert ours() == first
+    linked = {e["_to"] for e in db.collection("_viewpointQueries").all()}
+    assert {f"_queries/{k}" for k in first["_queries"]} <= linked
+    assert db.collection("_viewpointQueries").count() == len(
+        {(e["_from"], e["_to"]) for e in db.collection("_viewpointQueries").all()})

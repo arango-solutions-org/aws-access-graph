@@ -1,0 +1,19 @@
+// Q4  Which users, roles and workloads can reach this data store? (reverse blast radius)
+// graph: DataGraph
+// bind: { "storeArn": "arn:aws:s3:::financial-exports", "maxDepth": 6 }
+// Draws the shortest route back from the store to each user, role and workload that can reach it.
+WITH IAMRole, IAMUser, IAMInstanceProfile, EC2Instance, LambdaFunction
+LET store = FIRST(
+  FOR s IN UNION((FOR x IN S3Bucket FILTER x.arn == @storeArn RETURN x),
+                 (FOR x IN DynamoDBTable FILTER x.arn == @storeArn RETURN x))
+    RETURN s)
+FOR v, e, p IN 1..@maxDepth INBOUND store
+    canRead, canWrite, canManagePermissions, canAssumeRole, hasExecutionRole, hasRole, hasInstanceProfile
+  PRUNE e != null AND LENGTH(p.edges) > 1
+        AND PARSE_COLLECTION(e) IN ["canRead", "canWrite", "canManagePermissions"]
+  OPTIONS { uniqueVertices: "path", order: "bfs" }
+  FILTER PARSE_COLLECTION(p.edges[0]) IN ["canRead", "canWrite", "canManagePermissions"]
+  FILTER LENGTH(p.edges[* FILTER PARSE_COLLECTION(CURRENT) IN ["canRead", "canWrite", "canManagePermissions"]]) == 1
+  FILTER NOT IS_SAME_COLLECTION("IAMInstanceProfile", v)
+  COLLECT who = v._id INTO routes = p
+  RETURN FIRST(FOR r IN routes SORT LENGTH(r.edges) RETURN r)

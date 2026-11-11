@@ -3,15 +3,15 @@
 
 PY ?= python
 
-.PHONY: all install db generate validate schema load derive queries test e2e expected reset catalog clean
+.PHONY: all install forward generate validate schema load derive queries ui test e2e expected reset catalog clean
 
-all: generate validate schema load derive queries
+all: generate validate schema load derive queries ui
 
 install:
 	$(PY) -m pip install -e '.[dev]'
 
-db:                 ## start a local ArangoDB 3.12 (docker compose)
-	docker compose up -d --wait
+forward:            ## reach the local platform install on https://127.0.0.1:8529 (leave running; re-run if it drops)
+	kubectl port-forward -n arango service/deployment-ea 8529:8529
 
 generate:           ## ontology-driven synthetic data -> build/data.ttl
 	$(PY) -m awsgraph generate
@@ -30,6 +30,9 @@ derive:             ## evaluate policies in AQL -> hasEffectiveAccess, canList .
 
 queries:            ## run every query in aql/queries
 	$(PY) -m awsgraph queries
+
+ui:                 ## save the queries in the database for the web UI's query editor and Graph Visualizer
+	$(PY) -m awsgraph ui
 
 test:               ## unit tests (no database)
 	$(PY) -m pytest
